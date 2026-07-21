@@ -8,7 +8,8 @@ import '../widgets/transaction_tile.dart';
 import 'add_transaction_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+  final CategoryType? initialType;
+  const TransactionsScreen({super.key, this.initialType});
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -19,6 +20,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String? _categoryFilter;
   CategoryType? _typeFilter;
   DateTime? _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _typeFilter = widget.initialType;
+  }
 
   @override
   Widget build(BuildContext context) {

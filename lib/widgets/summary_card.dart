@@ -6,6 +6,7 @@ class SummaryCard extends StatelessWidget {
   final String amount;
   final IconData icon;
   final Color color;
+  final Widget? subtitle;
 
   const SummaryCard({
     super.key,
@@ -13,6 +14,7 @@ class SummaryCard extends StatelessWidget {
     required this.amount,
     required this.icon,
     required this.color,
+    this.subtitle,
   });
 
   @override
@@ -45,6 +47,10 @@ class SummaryCard extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 8),
+            subtitle!,
+          ],
         ],
       ),
     );

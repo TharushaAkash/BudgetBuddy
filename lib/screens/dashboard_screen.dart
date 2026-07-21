@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 
 import '../models/account_model.dart';
+import '../models/category_model.dart';
 import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
@@ -12,16 +13,44 @@ import 'add_transaction_screen.dart';
 import 'transactions_screen.dart';
 import 'installments_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool _isBalanceHidden = false;
+
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<FinanceProvider>();
+    
+    final incPct = provider.lastMonthIncome > 0 
+        ? ((provider.monthlyIncome - provider.lastMonthIncome) / provider.lastMonthIncome) * 100 
+        : (provider.monthlyIncome > 0 ? 100.0 : 0.0);
+        
+    final expPct = provider.lastMonthExpense > 0 
+        ? ((provider.monthlyExpense - provider.lastMonthExpense) / provider.lastMonthExpense) * 100 
+        : (provider.monthlyExpense > 0 ? 100.0 : 0.0);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_greeting, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Colors.grey)),
+            Text(provider.userName.isEmpty ? 'Overview' : provider.userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          ],
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () async {},
@@ -33,20 +62,36 @@ class DashboardScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: SummaryCard(
-                    label: 'Income this month',
-                    amount: Formatters.currency(provider.monthlyIncome, provider.currencySymbol),
-                    icon: Icons.arrow_downward,
-                    color: AppColors.income,
+                  child: InkWell(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen(initialType: CategoryType.income))),
+                    borderRadius: BorderRadius.circular(18),
+                    child: SummaryCard(
+                      label: 'Income this month',
+                      amount: Formatters.currency(provider.monthlyIncome, provider.currencySymbol),
+                      icon: Icons.arrow_downward,
+                      color: AppColors.income,
+                      subtitle: Text(
+                        '${incPct >= 0 ? '+' : ''}${incPct.toStringAsFixed(1)}% vs last month',
+                        style: TextStyle(fontSize: 10, color: incPct >= 0 ? Colors.green : Colors.red),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: SummaryCard(
-                    label: 'Expense this month',
-                    amount: Formatters.currency(provider.monthlyExpense, provider.currencySymbol),
-                    icon: Icons.arrow_upward,
-                    color: AppColors.expense,
+                  child: InkWell(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen(initialType: CategoryType.expense))),
+                    borderRadius: BorderRadius.circular(18),
+                    child: SummaryCard(
+                      label: 'Expense this month',
+                      amount: Formatters.currency(provider.monthlyExpense, provider.currencySymbol),
+                      icon: Icons.arrow_upward,
+                      color: AppColors.expense,
+                      subtitle: Text(
+                        '${expPct >= 0 ? '+' : ''}${expPct.toStringAsFixed(1)}% vs last month',
+                        style: TextStyle(fontSize: 10, color: expPct > 0 ? Colors.red : Colors.green),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -113,10 +158,25 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              InkWell(
+                onTap: () => setState(() => _isBalanceHidden = !_isBalanceHidden),
+                child: Icon(
+                  _isBalanceHidden ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 6),
           Text(
-            Formatters.currency(provider.totalBalance, provider.currencySymbol),
+            _isBalanceHidden 
+                ? '****' 
+                : Formatters.currency(provider.totalBalance, provider.currencySymbol),
             style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),

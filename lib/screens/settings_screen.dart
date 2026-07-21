@@ -1,14 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/finance_provider.dart';
 import 'accounts_screen.dart';
 import 'categories_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   static const _currencies = ['\$', '€', '£', '¥', '₹', '₨', 'د.إ', 'A\$'];
+  bool _smsPermissionGranted = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSmsPermission();
+  }
+
+  Future<void> _checkSmsPermission() async {
+    final status = await Permission.sms.status;
+    setState(() => _smsPermissionGranted = status.isGranted);
+  }
+
+  Future<void> _requestSmsPermission() async {
+    final status = await Permission.sms.request();
+    setState(() => _smsPermissionGranted = status.isGranted);
+    if (!status.isGranted && mounted) {
+      openAppSettings();
+    }
+  }
+
+  Future<void> _editName(FinanceProvider provider) async {
+    final ctrl = TextEditingController(text: provider.userName);
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter Your Name'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(hintText: 'e.g. Tharusha'),
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              provider.updateUserName(ctrl.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +70,26 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (!_smsPermissionGranted) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.sms_failed, color: Colors.redAccent),
+                title: const Text('SMS Permission Required', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Grant permission to automate bank transactions.', style: TextStyle(fontSize: 12, color: Colors.redAccent)),
+                trailing: FilledButton.tonal(
+                  onPressed: _requestSmsPermission,
+                  style: FilledButton.styleFrom(backgroundColor: Colors.redAccent.withOpacity(0.2), foregroundColor: Colors.redAccent),
+                  child: const Text('Allow'),
+                ),
+              ),
+            ),
+          ],
           _sectionTitle('Preferences'),
           Container(
             decoration: BoxDecoration(
@@ -27,6 +98,14 @@ class SettingsScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
+                ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text('Your Name'),
+                  subtitle: Text(provider.userName.isEmpty ? 'Not set' : provider.userName),
+                  trailing: const Icon(Icons.edit, size: 20),
+                  onTap: () => _editName(provider),
+                ),
+                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.dark_mode_outlined),
                   title: const Text('Theme'),

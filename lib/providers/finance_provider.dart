@@ -20,6 +20,7 @@ class FinanceProvider extends ChangeNotifier {
   static const _kThemeKey = 'ft_theme_mode';
   static const _kCurrencyKey = 'ft_currency';
   static const _kInstallmentsKey = 'ft_installments';
+  static const _kUserNameKey = 'ft_user_name';
 
   final _uuid = const Uuid();
   final _smsPlugin = Readsms();
@@ -32,6 +33,7 @@ class FinanceProvider extends ChangeNotifier {
 
   ThemeMode themeMode = ThemeMode.system;
   String currencySymbol = '\$';
+  String userName = '';
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -73,6 +75,7 @@ class FinanceProvider extends ChangeNotifier {
 
     if (themeIndex != null) themeMode = ThemeMode.values[themeIndex];
     if (currency != null) currencySymbol = currency;
+    userName = prefs.getString(_kUserNameKey) ?? '';
 
     if (!accounts.any((a) => a.type == AccountType.petty_cash)) {
       accounts.add(AccountModel(id: _uuid.v4(), name: 'Petty Cash', type: AccountType.petty_cash, openingBalance: 0, colorValue: 0xFFFF9800));
@@ -130,6 +133,13 @@ class FinanceProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kCurrencyKey, symbol);
+  }
+
+  Future<void> updateUserName(String name) async {
+    userName = name;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kUserNameKey, name);
   }
 
   // ---------------- SMS Automation ----------------
@@ -445,6 +455,12 @@ class FinanceProvider extends ChangeNotifier {
 
   double get monthlyIncome => totalIncomeInRange(monthStart, monthEnd);
   double get monthlyExpense => totalExpenseInRange(monthStart, monthEnd);
+
+  DateTime get lastMonthStart => DateTime(_now.year, _now.month - 1, 1);
+  DateTime get lastMonthEnd => DateTime(_now.year, _now.month, 1);
+
+  double get lastMonthIncome => totalIncomeInRange(lastMonthStart, lastMonthEnd);
+  double get lastMonthExpense => totalExpenseInRange(lastMonthStart, lastMonthEnd);
 
   /// Amount spent per category within the current budget period.
   double spentForBudget(BudgetModel b) {
