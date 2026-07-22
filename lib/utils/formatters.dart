@@ -15,6 +15,8 @@ class Formatters {
 
   static String dateShort(DateTime d) => DateFormat('MMM d').format(d);
 
+  static String time(DateTime d) => DateFormat('h:mm a').format(d);
+
   static String monthYear(DateTime d) => DateFormat('MMMM yyyy').format(d);
 
   static String monthShort(DateTime d) => DateFormat('MMM').format(d);
