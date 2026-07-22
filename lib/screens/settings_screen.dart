@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/finance_provider.dart';
+import '../utils/app_theme.dart';
 import 'accounts_screen.dart';
 import 'categories_screen.dart';
 
@@ -41,7 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enter Your Name'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Enter Your Name', style: TextStyle(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: ctrl,
           decoration: const InputDecoration(hintText: 'e.g. Tharusha'),
@@ -50,6 +52,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () {
               provider.updateUserName(ctrl.text.trim());
               Navigator.pop(context);
@@ -64,51 +70,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<FinanceProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
         children: [
           if (!_smsPermissionGranted) ...[
             Container(
-              margin: const EdgeInsets.only(bottom: 24),
+              margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                color: AppColors.expense.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.expense.withValues(alpha: 0.3)),
               ),
               child: ListTile(
-                leading: const Icon(Icons.sms_failed, color: Colors.redAccent),
-                title: const Text('SMS Permission Required', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Grant permission to automate bank transactions.', style: TextStyle(fontSize: 12, color: Colors.redAccent)),
-                trailing: FilledButton.tonal(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.expense.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.sms_failed_rounded, color: AppColors.expense, size: 20),
+                ),
+                title: const Text('SMS Permission Required', style: TextStyle(color: AppColors.expense, fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: const Text('Grant permission to auto-detect bank SMS transactions.', style: TextStyle(fontSize: 11, color: AppColors.expense)),
+                trailing: FilledButton(
                   onPressed: _requestSmsPermission,
-                  style: FilledButton.styleFrom(backgroundColor: Colors.redAccent.withOpacity(0.2), foregroundColor: Colors.redAccent),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.expense,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   child: const Text('Allow'),
                 ),
               ),
             ),
           ],
-          _sectionTitle('Preferences'),
+          const SizedBox(height: 20),
+          _sectionTitle('SECURITY', isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.fingerprint_rounded, color: AppColors.primary),
+                  title: const Text('Fingerprint Lock', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Require fingerprint to unlock app', style: TextStyle(fontSize: 12)),
+                  value: provider.isBiometricEnabled,
+                  onChanged: (bool value) async {
+                    if (value) {
+                      final statusError = await provider.checkBiometricStatus();
+                      if (statusError != null && context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            title: const Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                                SizedBox(width: 8),
+                                Text('Fingerprint Lock', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            content: Text(statusError),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    final success = await provider.setBiometricEnabled(value);
+                    if (!success && value && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Fingerprint authentication cancelled or failed'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+                  title: const Text('Installment Reminders', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Daily notifications for upcoming due dates', style: TextStyle(fontSize: 12)),
+                  value: provider.notificationsEnabled,
+                  onChanged: (bool value) async {
+                    await provider.setNotificationsEnabled(value);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _sectionTitle('PREFERENCES', isDark),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+              ),
             ),
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: const Text('Your Name'),
+                  leading: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
+                  title: const Text('Your Name', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(provider.userName.isEmpty ? 'Not set' : provider.userName),
-                  trailing: const Icon(Icons.edit, size: 20),
+                  trailing: const Icon(Icons.edit_rounded, size: 18),
                   onTap: () => _editName(provider),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.dark_mode_outlined),
-                  title: const Text('Theme'),
+                  leading: const Icon(Icons.dark_mode_outlined, color: AppColors.primary),
+                  title: const Text('Theme Mode', style: TextStyle(fontWeight: FontWeight.w600)),
                   trailing: DropdownButton<ThemeMode>(
                     value: provider.themeMode,
                     underline: const SizedBox.shrink(),
@@ -124,8 +216,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.attach_money),
-                  title: const Text('Currency'),
+                  leading: const Icon(Icons.attach_money_rounded, color: AppColors.primary),
+                  title: const Text('Currency Symbol', style: TextStyle(fontWeight: FontWeight.w600)),
                   trailing: DropdownButton<String>(
                     value: _currencies.contains(provider.currencySymbol) ? provider.currencySymbol : _currencies.first,
                     underline: const SizedBox.shrink(),
@@ -138,42 +230,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          _sectionTitle('Manage'),
+          const SizedBox(height: 20),
+          _sectionTitle('MANAGE DATA', isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+              ),
             ),
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.account_balance_wallet_outlined),
-                  title: const Text('Accounts'),
-                  trailing: const Icon(Icons.chevron_right),
+                  leading: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
+                  title: const Text('Accounts & Wallets', style: TextStyle(fontWeight: FontWeight.w600)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsScreen())),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.category_outlined),
-                  title: const Text('Categories'),
-                  trailing: const Icon(Icons.chevron_right),
+                  leading: const Icon(Icons.category_outlined, color: AppColors.primary),
+                  title: const Text('Transaction Categories', style: TextStyle(fontWeight: FontWeight.w600)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesScreen())),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          _sectionTitle('About'),
+          const SizedBox(height: 20),
+          _sectionTitle('ABOUT APP', isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+              ),
             ),
             child: const ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text('Finance Tracker'),
-              subtitle: Text('Version 1.0.0'),
+              leading: Icon(Icons.info_outline_rounded, color: AppColors.primary),
+              title: Text('BudgetBuddy Finance Tracker', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('Version 1.0.0 • Modern Edition'),
             ),
           ),
         ],
@@ -181,8 +279,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _sectionTitle(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8, left: 4),
-        child: Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+  Widget _sectionTitle(String text, bool isDark) => Padding(
+        padding: const EdgeInsets.only(bottom: 8, left: 6),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.1,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
+        ),
       );
 }
+

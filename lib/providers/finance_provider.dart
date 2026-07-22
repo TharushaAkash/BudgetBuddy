@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:readsms/readsms.dart';
@@ -11,6 +12,8 @@ import '../models/budget_model.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../models/installment_model.dart';
+import '../models/goal_model.dart';
+import '../services/notification_service.dart';
 
 class FinanceProvider extends ChangeNotifier {
   static const _kAccountsKey = 'ft_accounts';
@@ -20,20 +23,27 @@ class FinanceProvider extends ChangeNotifier {
   static const _kThemeKey = 'ft_theme_mode';
   static const _kCurrencyKey = 'ft_currency';
   static const _kInstallmentsKey = 'ft_installments';
+  static const _kGoalsKey = 'ft_goals';
   static const _kUserNameKey = 'ft_user_name';
+  static const _kBiometricKey = 'ft_biometric_enabled';
+  static const _kNotificationsKey = 'ft_notifications_enabled';
 
   final _uuid = const Uuid();
   final _smsPlugin = Readsms();
+  final _localAuth = LocalAuthentication();
 
   List<AccountModel> accounts = [];
   List<CategoryModel> categories = [];
   List<TransactionModel> transactions = [];
   List<BudgetModel> budgets = [];
   List<InstallmentModel> installments = [];
+  List<GoalModel> goals = [];
 
   ThemeMode themeMode = ThemeMode.system;
   String currencySymbol = '\$';
   String userName = '';
+  bool isBiometricEnabled = false;
+  bool notificationsEnabled = false;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -53,7 +63,9 @@ class FinanceProvider extends ChangeNotifier {
     final budJson = prefs.getString(_kBudgetsKey);
     final themeIndex = prefs.getInt(_kThemeKey);
     final currency = prefs.getString(_kCurrencyKey);
+    
     final instJson = prefs.getString(_kInstallmentsKey);
+    final goalsJson = prefs.getString(_kGoalsKey);
 
     accounts = accJson != null
         ? (jsonDecode(accJson) as List).map((e) => AccountModel.fromJson(e)).toList()
@@ -73,9 +85,15 @@ class FinanceProvider extends ChangeNotifier {
         ? (jsonDecode(instJson) as List).map((e) => InstallmentModel.fromJson(e)).toList()
         : [];
 
+    goals = goalsJson != null
+        ? (jsonDecode(goalsJson) as List).map((e) => GoalModel.fromJson(e)).toList()
+        : [];
+
     if (themeIndex != null) themeMode = ThemeMode.values[themeIndex];
     if (currency != null) currencySymbol = currency;
     userName = prefs.getString(_kUserNameKey) ?? '';
+    isBiometricEnabled = prefs.getBool(_kBiometricKey) ?? false;
+    notificationsEnabled = prefs.getBool(_kNotificationsKey) ?? false;
 
     if (!accounts.any((a) => a.type == AccountType.petty_cash)) {
       accounts.add(AccountModel(id: _uuid.v4(), name: 'Petty Cash', type: AccountType.petty_cash, openingBalance: 0, colorValue: 0xFFFF9800));
@@ -90,10 +108,12 @@ class FinanceProvider extends ChangeNotifier {
     if (txJson == null) await _saveTransactions();
     if (budJson == null) await _saveBudgets();
     if (instJson == null) await _saveInstallments();
+    if (goalsJson == null) await _saveGoals();
 
     initSmsListener();
     syncMissedSms();
     _checkPettyCashReset();
+    rescheduleAllInstallmentNotifications();
   }
 
   Future<void> _saveAccounts() async {
@@ -121,6 +141,11 @@ class FinanceProvider extends ChangeNotifier {
     await prefs.setString(_kInstallmentsKey, jsonEncode(installments.map((e) => e.toJson()).toList()));
   }
 
+  Future<void> _saveGoals() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kGoalsKey, jsonEncode(goals.map((e) => e.toJson()).toList()));
+  }
+
   Future<void> setThemeMode(ThemeMode mode) async {
     themeMode = mode;
     notifyListeners();
@@ -140,6 +165,107 @@ class FinanceProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kUserNameKey, name);
+  }
+
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    notificationsEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kNotificationsKey, enabled);
+    
+    if (enabled) {
+      await NotificationService().requestPermission();
+    }
+    
+    rescheduleAllInstallmentNotifications();
+    notifyListeners();
+  }
+
+  void rescheduleAllInstallmentNotifications() async {
+    final service = NotificationService();
+    await service.cancelAllNotifications();
+    
+    if (!notificationsEnabled) return;
+
+    for (final inst in installments) {
+      if (!inst.isCompleted) {
+        final date = inst.nextPaymentDate;
+        if (date != null) {
+          await service.scheduleInstallmentNotifications(inst.id, inst.item, date);
+        }
+      }
+    }
+  }
+
+  // ---------------- Biometric Authentication ----------------
+
+  Future<String?> checkBiometricStatus() async {
+    try {
+      final isSupported = await _localAuth.isDeviceSupported();
+      final canCheck = await _localAuth.canCheckBiometrics;
+
+      if (!isSupported && !canCheck) {
+        return 'Biometric authentication is not supported on this device.';
+      }
+
+      final availableBiometrics = await _localAuth.getAvailableBiometrics();
+      if (availableBiometrics.isEmpty) {
+        return 'No fingerprint or biometric credentials enrolled on this device. Please set up a fingerprint in device settings.';
+      }
+
+      return null; // Null means ready and enrolled!
+    } catch (e) {
+      return 'Biometric error: ${e.toString()}';
+    }
+  }
+
+  Future<bool> setBiometricEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (enabled) {
+      final statusError = await checkBiometricStatus();
+      if (statusError != null) {
+        // Device biometrics not enrolled or supported
+        return false;
+      }
+
+      final success = await authenticateBiometric(
+        reason: 'Scan your fingerprint to enable biometric lock',
+      );
+
+      if (success) {
+        isBiometricEnabled = true;
+        await prefs.setBool(_kBiometricKey, true);
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      isBiometricEnabled = false;
+      await prefs.setBool(_kBiometricKey, false);
+      notifyListeners();
+      return true;
+    }
+  }
+
+  Future<bool> authenticateBiometric({String reason = 'Authenticate to access BudgetBuddy'}) async {
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+
+      if (!canCheck && !isSupported) return false;
+
+      return await _localAuth.authenticate(
+        localizedReason: reason,
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false, // Allows device PIN/pattern fallback if fingerprint hardware is unavailable
+          useErrorDialogs: true,
+        ),
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   // ---------------- SMS Automation ----------------
@@ -367,16 +493,43 @@ class FinanceProvider extends ChangeNotifier {
     installments.add(inst);
     notifyListeners();
     await _saveInstallments();
+    rescheduleAllInstallmentNotifications();
+  }
+
+  Future<void> updateInstallment(InstallmentModel inst) async {
+    final idx = installments.indexWhere((e) => e.id == inst.id);
+    if (idx != -1) {
+      installments[idx] = inst;
+      notifyListeners();
+      await _saveInstallments();
+      rescheduleAllInstallmentNotifications();
+    }
   }
 
   Future<void> deleteInstallment(String id) async {
     installments.removeWhere((e) => e.id == id);
     notifyListeners();
     await _saveInstallments();
+    rescheduleAllInstallmentNotifications();
   }
 
   double get totalRemainingInstallments {
-    return installments.fold(0.0, (sum, item) => sum + item.remainingAmount);
+    return installments.where((i) => !i.isCompleted).fold(0.0, (sum, item) => sum + item.remainingAmount);
+  }
+
+  DateTime? get closestNextPaymentDate {
+    DateTime? closest;
+    for (final inst in installments) {
+      if (!inst.isCompleted) {
+        final d = inst.nextPaymentDate;
+        if (d != null) {
+          if (closest == null || d.isBefore(closest)) {
+            closest = d;
+          }
+        }
+      }
+    }
+    return closest;
   }
 
   // ---------------- Derived data / computations ----------------
@@ -548,5 +701,28 @@ class FinanceProvider extends ChangeNotifier {
       return matchesQuery && matchesCategory && matchesAccount && matchesType && matchesStart && matchesEnd;
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  // ---------------- Goals Management ----------------
+
+  Future<void> addGoal(GoalModel goal) async {
+    goals.add(goal);
+    notifyListeners();
+    await _saveGoals();
+  }
+
+  Future<void> updateGoal(GoalModel goal) async {
+    final idx = goals.indexWhere((e) => e.id == goal.id);
+    if (idx != -1) {
+      goals[idx] = goal;
+      notifyListeners();
+      await _saveGoals();
+    }
+  }
+
+  Future<void> deleteGoal(String id) async {
+    goals.removeWhere((e) => e.id == id);
+    notifyListeners();
+    await _saveGoals();
   }
 }
