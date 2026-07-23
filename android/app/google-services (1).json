@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "88935587448",
+    "project_id": "budgetbuddy-da97c",
+    "storage_bucket": "budgetbuddy-da97c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88935587448:android:1c635ea1cc1c380130978d",
+        "android_client_info": {
+          "package_name": "com.example.finance_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCInOaRbFeCzTKU0dBcXqZ5QUrQUy8TZas"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
