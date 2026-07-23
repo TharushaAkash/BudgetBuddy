@@ -36,6 +36,7 @@ class AiService {
         },
         body: jsonEncode({
           'model': 'google/gemini-2.5-flash',
+          'max_tokens': 1000,
           'messages': [
             {'role': 'user', 'content': prompt}
           ]
