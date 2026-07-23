@@ -57,7 +57,7 @@ Target: ${goal.targetAmount}, Saved so far: ${goal.savedAmount}, Deadline: ${goa
 Here is their financial summary:
 $financialSummary
 
-Provide a very short, 1-2 sentence suggestion on how much they should save TODAY or THIS WEEK to stay on track for this goal, considering their current cash and upcoming expenses. Keep it extremely brief and encouraging. Do not use markdown formatting.
+Provide a very short, 1-2 sentence suggestion on how much they should save TODAY or THIS WEEK to stay on track for this goal, considering their current cash and upcoming expenses. Keep it extremely brief and encouraging. Do not use markdown formatting. IMPORTANT: You MUST respond entirely in the Sinhala language.
 ''';
     return _callGemini(prompt);
   }
@@ -68,7 +68,7 @@ You are a concise financial advisor. The user is about to add a new expense of $
 Here is their financial summary:
 $financialSummary
 
-Provide a very short 1-sentence prediction on whether this expense is safe to make right now or if it will jeopardize their goals or loan payments. If it's safe because of upcoming income, mention it briefly. Do not use markdown formatting.
+Provide a very short 1-sentence prediction on whether this expense is safe to make right now or if it will jeopardize their goals or loan payments. If it's safe because of upcoming income, mention it briefly. Do not use markdown formatting. IMPORTANT: You MUST respond entirely in the Sinhala language.
 ''';
     return _callGemini(prompt);
   }
