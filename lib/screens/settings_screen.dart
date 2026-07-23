@@ -8,6 +8,7 @@ import 'accounts_screen.dart';
 import 'categories_screen.dart';
 import '../providers/auth_provider.dart';
 import '../services/backup_service.dart';
+import '../services/ai_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -286,6 +287,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
+          _sectionTitle('AI ASSISTANT', isDark),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.vpn_key_rounded, color: Colors.amber),
+              title: const Text('OpenRouter API Key', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Required for AI Financial Advisor', style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                _showApiKeyDialog();
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
           _sectionTitle('PREFERENCES', isDark),
           Container(
             decoration: BoxDecoration(
@@ -398,5 +419,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       );
+
+  Future<void> _showApiKeyDialog() async {
+    final controller = TextEditingController();
+    final currentKey = await AiService.getApiKey();
+    if (currentKey != null && currentKey.isNotEmpty) {
+      controller.text = currentKey;
+    }
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('OpenRouter API Key'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'sk-or-...',
+            labelText: 'API Key',
+          ),
+          obscureText: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await AiService.saveApiKey(controller.text);
+              if (mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key saved!')));
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 

@@ -756,4 +756,32 @@ class FinanceProvider extends ChangeNotifier {
     notifyListeners();
     await _saveGoals();
   }
+
+  // ---------------- AI Financial Summary ----------------
+  String getFinancialSummary() {
+    final now = DateTime.now();
+    final currentMonthIncome = totalIncomeInRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 1));
+    final currentMonthExpense = totalExpenseInRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 1));
+    final pettyCash = getPettyCashBalanceAt(now);
+    
+    final goalsStr = goals.isEmpty ? 'No active goals.' : goals.map((g) => '- ${g.name}: Target ${g.targetAmount}, Saved ${g.savedAmount}, Deadline ${g.targetDate.toString().split(" ")[0]}').join('\n');
+    final installmentsStr = installments.isEmpty ? 'No active loans.' : installments.map((i) => '- ${i.shop} ${i.item}: Total ${i.totalAmount}, Paid ${i.paidAmount}, Monthly Payment ${i.monthlyAmount}').join('\n');
+    final accountsStr = accounts.isEmpty ? 'No accounts.' : accounts.map((a) => '- ${a.name} (${a.type.name}): Balance ${accountBalance(a.id)}').join('\n');
+
+    return '''
+Current Financial Status (As of ${now.toString().split(" ")[0]}):
+- Monthly Income (This Month): $currentMonthIncome
+- Monthly Expense (This Month): $currentMonthExpense
+- Petty Cash Balance: $pettyCash
+
+Accounts:
+$accountsStr
+
+Active Goals:
+$goalsStr
+
+Active Loans/Installments:
+$installmentsStr
+''';
+  }
 }
