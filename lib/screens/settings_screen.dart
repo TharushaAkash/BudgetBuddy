@@ -6,6 +6,8 @@ import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
 import 'accounts_screen.dart';
 import 'categories_screen.dart';
+import '../providers/auth_provider.dart';
+import '../services/backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -70,6 +72,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<FinanceProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -175,6 +179,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await provider.setNotificationsEnabled(value);
                   },
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _sectionTitle('CLOUD BACKUP (GOOGLE DRIVE)', isDark),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Column(
+              children: [
+                if (user == null)
+                  ListTile(
+                    leading: const Icon(Icons.login_rounded, color: AppColors.primary),
+                    title: const Text('Sign in with Google', style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Required for cloud backup', style: TextStyle(fontSize: 12)),
+                    onTap: () => authProvider.signIn(),
+                  )
+                else ...[
+                  ListTile(
+                    leading: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.white24,
+                      backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+                      child: user.photoUrl == null ? const Icon(Icons.person, size: 16) : null,
+                    ),
+                    title: Text(user.displayName ?? 'Google Account', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(user.email, style: const TextStyle(fontSize: 12)),
+                    trailing: TextButton(
+                      onPressed: () => authProvider.signOut(),
+                      child: const Text('Sign Out', style: TextStyle(color: AppColors.expense)),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.cloud_upload_outlined, color: AppColors.primary),
+                    title: const Text('Backup Now', style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: FutureBuilder<String?>(
+                      future: BackupService.getLastBackupTime(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null) {
+                          final date = DateTime.parse(snapshot.data!);
+                          return Text('Last: ${date.toString().split('.')[0]}', style: const TextStyle(fontSize: 12));
+                        }
+                        return const Text('No recent backup', style: TextStyle(fontSize: 12));
+                      },
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () async {
+                      final client = await authProvider.getAuthenticatedClient();
+                      if (client != null) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Starting backup...')),
+                          );
+                        }
+                        final success = await BackupService.performBackup(client);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success ? 'Backup Successful!' : 'Backup Failed.'),
+                              backgroundColor: success ? AppColors.income : AppColors.expense,
+                            ),
+                          );
+                          setState(() {});
+                        }
+                      }
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.cloud_download_outlined, color: AppColors.income),
+                    title: const Text('Restore Data', style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Download backup from Google Drive', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () async {
+                      final client = await authProvider.getAuthenticatedClient();
+                      if (client != null) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Starting restore...')),
+                          );
+                        }
+                        final success = await BackupService.restoreBackup(client, () {
+                          provider.reload();
+                        });
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success ? 'Restore Successful!' : 'Restore Failed or No backup found.'),
+                              backgroundColor: success ? AppColors.income : AppColors.expense,
+                            ),
+                          );
+                          setState(() {});
+                        }
+                      }
+                    },
+                  ),
+                ],
               ],
             ),
           ),

@@ -54,6 +54,10 @@ class FinanceProvider extends ChangeNotifier {
 
   // ---------------- Persistence ----------------
 
+  Future<void> reload() async {
+    await _load();
+  }
+
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
 
