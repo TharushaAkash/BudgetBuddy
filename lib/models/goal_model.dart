@@ -21,7 +21,7 @@ class GoalModel {
   });
 
   Color get color => Color(colorValue);
-  IconData get icon => IconData(iconCodePoint, fontFamily: 'MaterialIcons');
+  IconData get icon => Icons.flag_rounded;
   double get progress => targetAmount > 0 ? (savedAmount / targetAmount).clamp(0.0, 1.0) : 0.0;
   bool get isCompleted => savedAmount >= targetAmount;
 
