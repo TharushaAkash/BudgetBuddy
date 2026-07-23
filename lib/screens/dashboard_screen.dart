@@ -727,6 +727,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
+
+  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, Widget destination, {Color? color}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final itemColor = color ?? (isDark ? AppColors.primaryLight : AppColors.primary);
+    
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: itemColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: itemColor, size: 22),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
+      },
+    );
+  }
 }
 
 class _QuickAction {
