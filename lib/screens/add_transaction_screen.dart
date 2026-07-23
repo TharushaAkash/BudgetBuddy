@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../providers/finance_provider.dart';
+import 'dart:async';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/ai_service.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? existing;
@@ -28,6 +30,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   RecurrenceInterval _recurrence = RecurrenceInterval.none;
   bool _isTransfer = false;
   String? _toAccountId;
+  
+  Timer? _debounce;
+  String? _aiPrediction;
+  bool _isAiPredicting = false;
 
   @override
   void initState() {
@@ -45,10 +51,50 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _isTransfer = e.isTransfer;
       _toAccountId = e.toAccountId;
     }
+
+    _amountController.addListener(_onAmountChanged);
+  }
+
+  void _onAmountChanged() {
+    if (_type != CategoryType.expense || _isTransfer) {
+      if (_aiPrediction != null) setState(() => _aiPrediction = null);
+      return;
+    }
+
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    final text = _amountController.text;
+    final amount = double.tryParse(text) ?? 0.0;
+    
+    if (amount <= 0) {
+      setState(() {
+        _isAiPredicting = false;
+        _aiPrediction = null;
+      });
+      return;
+    }
+
+    setState(() => _isAiPredicting = true);
+    
+    _debounce = Timer(const Duration(milliseconds: 1000), () async {
+      try {
+        final provider = context.read<FinanceProvider>();
+        final summary = provider.getFinancialSummary();
+        final category = provider.categories.firstWhere((c) => c.id == _categoryId, orElse: () => CategoryModel(id: '', name: 'General', iconKey: 'other_expense', colorValue: 0, type: CategoryType.expense)).name;
+        
+        final prediction = await AiService.getExpenseImpactPrediction(amount, category, summary);
+        if (mounted) setState(() => _aiPrediction = prediction);
+      } catch (e) {
+        print(e);
+      } finally {
+        if (mounted) setState(() => _isAiPredicting = false);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -219,6 +265,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       return null;
                     },
                   ),
+                  if (_type == CategoryType.expense && !_isTransfer && (_isAiPredicting || _aiPrediction != null)) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _isAiPredicting
+                                ? const Text(
+                                    'AI is predicting impact...',
+                                    style: TextStyle(fontSize: 12, color: Colors.amber, fontStyle: FontStyle.italic),
+                                  )
+                                : Text(
+                                    _aiPrediction!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

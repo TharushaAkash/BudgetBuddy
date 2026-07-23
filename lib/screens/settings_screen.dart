@@ -298,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: ListTile(
               leading: const Icon(Icons.vpn_key_rounded, color: Colors.amber),
-              title: const Text('OpenRouter API Key', style: TextStyle(fontWeight: FontWeight.w600)),
+              title: const Text('Gemini API Key', style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('Required for AI Financial Advisor', style: TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
@@ -431,7 +431,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('OpenRouter API Key'),
+        title: const Text('Gemini API Key'),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(

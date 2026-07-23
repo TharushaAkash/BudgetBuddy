@@ -2,63 +2,74 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/goal_model.dart';
+
 class AiService {
-  static const String _baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  
   static Future<String?> getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final key = prefs.getString('openrouter_api_key');
+    final key = prefs.getString('gemini_api_key');
     if (key != null && key.isNotEmpty) return key;
     return null;
   }
 
   static Future<void> saveApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('openrouter_api_key', key.trim());
+    await prefs.setString('gemini_api_key', key.trim());
   }
 
-  static Future<String> getAiResponse({
-    required String systemPrompt,
-    required String userMessage,
-    required List<Map<String, String>> chatHistory,
-  }) async {
+  static Future<String> _callGemini(String prompt) async {
     final apiKey = await getApiKey();
-    
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('API Key not found. Please add your OpenRouter API Key in Settings.');
+      throw Exception('Gemini API Key not found.');
     }
 
-    final messages = [
-      {'role': 'system', 'content': systemPrompt},
-      ...chatHistory,
-      {'role': 'user', 'content': userMessage},
-    ];
-
+    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey');
+    
     try {
       final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/TharushaAkash/BudgetBuddy', // Optional, for OpenRouter rankings
-          'X-Title': 'BudgetBuddy AI', // Optional, for OpenRouter rankings
-        },
+        url,
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          // 'google/gemini-1.5-pro' is excellent for complex financial reasoning
-          'model': 'google/gemini-1.5-pro',
-          'messages': messages,
-          'temperature': 0.7,
+          'contents': [
+            {
+              'parts': [{'text': prompt}]
+            }
+          ]
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['choices'][0]['message']['content'] ?? 'No response generated.';
+        return data['candidates'][0]['content']['parts'][0]['text'] ?? '';
       } else {
         throw Exception('Failed to get response: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       throw Exception('Error connecting to AI: $e');
     }
+  }
+
+  static Future<String> getGoalSuggestion(GoalModel goal, String financialSummary) async {
+    final prompt = '''
+You are a concise financial advisor in a finance app. 
+The user has a goal: "${goal.name}". 
+Target: ${goal.targetAmount}, Saved so far: ${goal.savedAmount}, Deadline: ${goal.targetDate.toString().split(" ")[0]}.
+Here is their financial summary:
+$financialSummary
+
+Provide a very short, 1-2 sentence suggestion on how much they should save TODAY or THIS WEEK to stay on track for this goal, considering their current cash and upcoming expenses. Keep it extremely brief and encouraging. Do not use markdown formatting.
+''';
+    return _callGemini(prompt);
+  }
+
+  static Future<String> getExpenseImpactPrediction(double amount, String category, String financialSummary) async {
+    final prompt = '''
+You are a concise financial advisor. The user is about to add a new expense of $amount for category "$category".
+Here is their financial summary:
+$financialSummary
+
+Provide a very short 1-sentence prediction on whether this expense is safe to make right now or if it will jeopardize their goals or loan payments. If it's safe because of upcoming income, mention it briefly. Do not use markdown formatting.
+''';
+    return _callGemini(prompt);
   }
 }

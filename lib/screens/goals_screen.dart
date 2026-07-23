@@ -6,6 +6,7 @@ import '../models/goal_model.dart';
 import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/ai_service.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -56,14 +57,45 @@ class GoalsScreen extends StatelessWidget {
   }
 }
 
-class _GoalCard extends StatelessWidget {
+class _GoalCard extends StatefulWidget {
   final GoalModel goal;
   const _GoalCard({required this.goal});
+
+  @override
+  State<_GoalCard> createState() => _GoalCardState();
+}
+
+class _GoalCardState extends State<_GoalCard> {
+  String? _suggestion;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSuggestion();
+  }
+
+  Future<void> _fetchSuggestion() async {
+    if (widget.goal.isCompleted) return;
+    setState(() => _isLoading = true);
+    try {
+      final provider = context.read<FinanceProvider>();
+      final summary = provider.getFinancialSummary();
+      final text = await AiService.getGoalSuggestion(widget.goal, summary);
+      if (mounted) setState(() => _suggestion = text);
+    } catch (e) {
+      // Ignore AI errors gracefully
+      print(e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<FinanceProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final goal = widget.goal;
     
     return Card(
       elevation: 0,
@@ -155,6 +187,38 @@ class _GoalCard extends StatelessWidget {
                   color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                 ),
               ),
+              if (!goal.isCompleted && (_isLoading || _suggestion != null)) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _isLoading
+                            ? const Text(
+                                'AI is thinking...',
+                                style: TextStyle(fontSize: 12, color: Colors.amber, fontStyle: FontStyle.italic),
+                              )
+                            : Text(
+                                _suggestion!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

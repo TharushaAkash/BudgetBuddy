@@ -15,7 +15,6 @@ import 'installments_screen.dart';
 import 'petty_cash_screen.dart';
 import 'transactions_screen.dart';
 import 'goals_screen.dart';
-import 'ai_advisor_screen.dart';
 import '../providers/auth_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -479,12 +478,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       _QuickAction(
-        icon: Icons.auto_awesome,
-        label: 'AI Advisor',
-        color: Colors.amber,
+        icon: Icons.credit_score_rounded,
+        label: 'Loans',
+        color: Colors.purple,
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AiAdvisorScreen()),
+          MaterialPageRoute(builder: (_) => const InstallmentsScreen()),
         ),
       ),
     ];
