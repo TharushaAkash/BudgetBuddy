@@ -27,6 +27,14 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isBalanceHidden = false;
+  final PageController _pageController = PageController();
+  int _currentCardIndex = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -295,98 +303,230 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHeroBalanceCard(BuildContext context, FinanceProvider provider) {
-    return AspectRatio(
-      aspectRatio: 1.586,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0A3A2F), Color(0xFF155E4F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0A3A2F).withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.greenAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'total_net_worth'.tr(context).toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
+    final bankTotal = provider.accounts
+        .where((a) => a.type == AccountType.bank)
+        .fold(0.0, (sum, a) => sum + provider.accountBalance(a.id));
+        
+    final cashTotal = provider.accounts
+        .where((a) => a.type == AccountType.cash || a.type == AccountType.petty_cash)
+        .fold(0.0, (sum, a) => sum + provider.accountBalance(a.id));
+
+    return Column(
+      children: [
+        AspectRatio(
+          aspectRatio: 1.586,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentCardIndex = index;
+              });
+            },
+            physics: const BouncingScrollPhysics(),
+            children: [
+              // Card 1: Total Net Worth
+              _buildSwipeableCard(
+                context: context,
+                provider: provider,
+                title: 'total_net_worth'.tr(context).toUpperCase(),
+                amount: provider.totalBalance,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0A3A2F), Color(0xFF155E4F)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                Row(
+                bottomWidget: Row(
+                  children: provider.accounts
+                      .where((a) => a.type == AccountType.cash || a.type == AccountType.bank || a.type == AccountType.petty_cash)
+                      .take(3)
+                      .map((a) {
+                    return Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(a.icon, color: Colors.white70, size: 13),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  a.name,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isBalanceHidden
+                                ? '••••'
+                                : Formatters.currencyCompact(provider.accountBalance(a.id), provider.currencySymbol),
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              // Card 2: Main Bank Total
+              _buildSwipeableCard(
+                context: context,
+                provider: provider,
+                title: 'MAIN BANK TOTAL',
+                amount: bankTotal,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                bottomWidget: Text(
+                  'Combined balance of all linked bank accounts.',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
+                ),
+              ),
+
+              // Card 3: Cash & Petty Cash Total
+              _buildSwipeableCard(
+                context: context,
+                provider: provider,
+                title: 'CASH & PETTY CASH',
+                amount: cashTotal,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF31103F), Color(0xFF4C1D95)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                bottomWidget: Text(
+                  'Physical cash on hand and petty cash reserves.',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Dots Indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 6,
+              width: _currentCardIndex == index ? 24 : 6,
+              decoration: BoxDecoration(
+                color: _currentCardIndex == index ? AppColors.primary : Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwipeableCard({
+    required BuildContext context,
+    required FinanceProvider provider,
+    required String title,
+    required double amount,
+    required LinearGradient gradient,
+    required Widget bottomWidget,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 2), // small margin for page peek if needed, though we use fixed AspectRatio
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.colors.first.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Row(
                   children: [
-                    InkWell(
-                      onTap: () => setState(() => _isBalanceHidden = !_isBalanceHidden),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isBalanceHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.greenAccent,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.contactless_rounded, color: Colors.white70, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ],
                 ),
-              ],
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+              ),
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () => setState(() => _isBalanceHidden = !_isBalanceHidden),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isBalanceHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.contactless_rounded, color: Colors.white70, size: 24),
+                ],
+              ),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
                         _isBalanceHidden
                             ? '••••••••'
-                            : Formatters.currency(provider.totalBalance, provider.currencySymbol),
+                            : Formatters.currency(amount, provider.currencySymbol),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 34,
@@ -394,60 +534,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '****  ****  ****  8888',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                          letterSpacing: 3,
-                          fontFamily: 'Courier',
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '****  ****  ****  8888',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 14,
+                        letterSpacing: 3,
+                        fontFamily: 'Courier',
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                _buildEMVChip(),
-              ],
-            ),
-            Row(
-              children: provider.accounts
-                  .where((a) => a.type == AccountType.cash || a.type == AccountType.bank || a.type == AccountType.petty_cash)
-                  .take(3)
-                  .map((a) {
-                return Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(a.icon, color: Colors.white70, size: 13),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              a.name,
-                              style: const TextStyle(color: Colors.white70, fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _isBalanceHidden
-                            ? '••••'
-                            : Formatters.currencyCompact(provider.accountBalance(a.id), provider.currencySymbol),
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+              ),
+              _buildEMVChip(),
+            ],
+          ),
+          bottomWidget,
+        ],
       ),
     );
   }
