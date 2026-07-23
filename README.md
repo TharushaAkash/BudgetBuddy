@@ -1,6 +1,6 @@
 # 💸 BudgetBuddy (Finance Tracker)
 
-![BudgetBuddy Banner](ss/Screenshot_20260723_164522.jpg")
+![BudgetBuddy Banner](ss/Screenshot_20260723_164522.jpg)
 
 
 A modern, full-featured, and highly intelligent personal finance management application built with **Flutter**. Keep track of your daily expenses, monitor your financial goals, manage installments, and receive personalized financial advice powered by OpenRouter AI.
