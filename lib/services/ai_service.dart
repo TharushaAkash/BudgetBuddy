@@ -7,40 +7,44 @@ import '../models/goal_model.dart';
 class AiService {
   static Future<String?> getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final key = prefs.getString('gemini_api_key');
+    final key = prefs.getString('openrouter_api_key');
     if (key != null && key.isNotEmpty) return key;
     return null;
   }
 
   static Future<void> saveApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('gemini_api_key', key.trim());
+    await prefs.setString('openrouter_api_key', key.trim());
   }
 
-  static Future<String> _callGemini(String prompt) async {
+  static Future<String> _callAI(String prompt) async {
     final apiKey = await getApiKey();
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('Gemini API Key not found.');
+      throw Exception('OpenRouter API Key not found.');
     }
 
-    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$apiKey');
+    final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
     
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+          'HTTP-Referer': 'https://budgetbuddy.app',
+          'X-Title': 'BudgetBuddy',
+        },
         body: jsonEncode({
-          'contents': [
-            {
-              'parts': [{'text': prompt}]
-            }
+          'model': 'google/gemini-2.5-flash',
+          'messages': [
+            {'role': 'user', 'content': prompt}
           ]
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        return data['choices'][0]['message']['content'] ?? '';
       } else {
         throw Exception('Failed to get response: ${response.statusCode} - ${response.body}');
       }
@@ -59,7 +63,7 @@ $financialSummary
 
 Provide a very short, 1-2 sentence suggestion on how much they should save TODAY or THIS WEEK to stay on track for this goal, considering their current cash and upcoming expenses. Keep it extremely brief and encouraging. Do not use markdown formatting. IMPORTANT: You MUST respond entirely in the Sinhala language.
 ''';
-    return _callGemini(prompt);
+    return _callAI(prompt);
   }
 
   static Future<String> getExpenseImpactPrediction(double amount, String category, String financialSummary) async {
@@ -70,6 +74,6 @@ $financialSummary
 
 Provide a very short 1-sentence prediction on whether this expense is safe to make right now or if it will jeopardize their goals or loan payments. If it's safe because of upcoming income, mention it briefly. Do not use markdown formatting. IMPORTANT: You MUST respond entirely in the Sinhala language.
 ''';
-    return _callGemini(prompt);
+    return _callAI(prompt);
   }
 }

@@ -28,7 +28,7 @@ class AppTranslations {
 
       // Settings
       'ai_assistant': 'AI ASSISTANT',
-      'gemini_api_key': 'Gemini API Key',
+      'gemini_api_key': 'OpenRouter API Key',
       'gemini_api_key_sub': 'Required for AI Financial Advisor',
       'preferences': 'PREFERENCES',
       'language': 'Language / භාෂාව',
@@ -100,7 +100,7 @@ class AppTranslations {
 
       // Settings
       'ai_assistant': 'AI සහායකයා',
-      'gemini_api_key': 'Gemini API Key',
+      'gemini_api_key': 'OpenRouter API Key',
       'gemini_api_key_sub': 'AI උපදේශක සඳහා අවශ්‍ය වේ',
       'preferences': 'මනාපයන් (PREFERENCES)',
       'language': 'භාෂාව / Language',
