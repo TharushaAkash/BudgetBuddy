@@ -8,6 +8,7 @@ import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/transaction_tile.dart';
 import 'add_transaction_screen.dart';
+import '../utils/translations.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final CategoryType? initialType;
@@ -58,7 +59,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: Text('transactions'.tr(context)),
         actions: [
           if (_selectedDate != null)
             IconButton(
@@ -93,7 +94,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search title or note...',
+                hintText: 'search'.tr(context),
                 prefixIcon: const Icon(Icons.search_rounded, size: 20),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(

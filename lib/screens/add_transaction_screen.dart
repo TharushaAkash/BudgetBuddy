@@ -8,6 +8,7 @@ import 'dart:async';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../services/ai_service.dart';
+import '../utils/translations.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? existing;
@@ -117,7 +118,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.existing == null ? 'Add Transaction' : 'Edit Transaction',
+          widget.existing == null ? 'add_transaction'.tr(context) : 'edit_transaction'.tr(context),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -169,7 +170,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Expense',
+                                'expense'.tr(context),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: _type == CategoryType.expense ? Colors.white : Colors.grey.shade600,
@@ -203,7 +204,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Income',
+                                'income'.tr(context),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: _type == CategoryType.income ? Colors.white : Colors.grey.shade600,
@@ -231,7 +232,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AMOUNT',
+                    'amount'.tr(context),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -303,21 +304,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              title: const Text('Transfer between accounts', style: TextStyle(fontWeight: FontWeight.w600)),
+              title: Text('transfer_between_accounts'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
               value: _isTransfer,
               onChanged: (v) => setState(() => _isTransfer = v),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title', hintText: 'e.g. Grocery shopping'),
+              decoration: InputDecoration(labelText: 'title'.tr(context), hintText: 'e.g. Grocery shopping'),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
             ),
             const SizedBox(height: 14),
             if (!_isTransfer)
               DropdownButtonFormField<String>(
                 initialValue: filteredCategories.any((c) => c.id == _categoryId) ? _categoryId : null,
-                decoration: const InputDecoration(labelText: 'Category'),
+                decoration: InputDecoration(labelText: 'category'.tr(context)),
                 items: filteredCategories
                     .map((c) => DropdownMenuItem(
                           value: c.id,
@@ -344,7 +345,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             if (!_isTransfer) const SizedBox(height: 14),
             DropdownButtonFormField<String>(
               initialValue: provider.accounts.any((a) => a.id == _accountId) ? _accountId : null,
-              decoration: InputDecoration(labelText: _isTransfer ? 'From Account' : 'Account'),
+              decoration: InputDecoration(labelText: _isTransfer ? 'from_account'.tr(context) : 'account'.tr(context)),
               items: provider.accounts
                   .map((a) => DropdownMenuItem(
                         value: a.id,
@@ -364,7 +365,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
                 initialValue: provider.accounts.any((a) => a.id == _toAccountId) ? _toAccountId : null,
-                decoration: const InputDecoration(labelText: 'To Account'),
+                decoration: InputDecoration(labelText: 'to_account'.tr(context)),
                 items: provider.accounts
                     .where((a) => a.id != _accountId)
                     .map((a) => DropdownMenuItem(value: a.id, child: Text(a.name)))
@@ -400,7 +401,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Date', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+                        Text('date'.tr(context), style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
                         const SizedBox(height: 2),
                         Text(Formatters.date(_date), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       ],
@@ -414,7 +415,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             if (!_isTransfer)
               DropdownButtonFormField<RecurrenceInterval>(
                 initialValue: _recurrence,
-                decoration: const InputDecoration(labelText: 'Repeat'),
+                decoration: InputDecoration(labelText: 'repeat'.tr(context)),
                 items: RecurrenceInterval.values
                     .map((r) => DropdownMenuItem(value: r, child: Text(_recurrenceLabel(r))))
                     .toList(),
@@ -424,7 +425,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             TextFormField(
               controller: _noteController,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Note (optional)', hintText: 'Add extra details...'),
+              decoration: InputDecoration(labelText: 'note_optional'.tr(context), hintText: 'Add extra details...'),
             ),
             const SizedBox(height: 28),
             SizedBox(
@@ -438,7 +439,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 onPressed: () => _submit(provider),
                 child: Text(
-                  widget.existing == null ? 'Save Transaction' : 'Update Transaction',
+                  widget.existing == null ? 'add'.tr(context) : 'save'.tr(context),
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

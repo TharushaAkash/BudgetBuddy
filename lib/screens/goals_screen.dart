@@ -7,6 +7,7 @@ import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../services/ai_service.dart';
+import '../utils/translations.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -19,12 +20,12 @@ class GoalsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Financial Goals'),
+        title: Text('financial_goals'.tr(context)),
       ),
       body: goals.isEmpty
           ? Center(
               child: Text(
-                'No goals yet.\nTap + to create one!',
+                'no_goals_yet'.tr(context),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
@@ -132,7 +133,7 @@ class _GoalCardState extends State<_GoalCard> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Target: ${Formatters.date(goal.targetDate)}',
+                          '${'target'.tr(context)} ${Formatters.date(goal.targetDate)}',
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -180,7 +181,7 @@ class _GoalCardState extends State<_GoalCard> {
               ),
               const SizedBox(height: 6),
               Text(
-                '${(goal.progress * 100).toStringAsFixed(1)}% Completed',
+                '${(goal.progress * 100).toStringAsFixed(1)}% ${'completed'.tr(context)}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -233,18 +234,18 @@ class _GoalCardState extends State<_GoalCard> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Funds'),
+        title: Text('add_funds'.tr(context)),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
-            labelText: 'Amount',
+            labelText: 'amount'.tr(context),
             prefixText: provider.currencySymbol,
           ),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr(context))),
           FilledButton(
             onPressed: () {
               final amount = double.tryParse(controller.text) ?? 0;
@@ -333,7 +334,7 @@ class _GoalFormSheetState extends State<_GoalFormSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.goal == null ? 'New Goal' : 'Edit Goal',
+                    widget.goal == null ? 'add'.tr(context) : 'edit'.tr(context),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   if (widget.goal != null)
@@ -349,7 +350,7 @@ class _GoalFormSheetState extends State<_GoalFormSheet> {
               const SizedBox(height: 20),
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Goal Name (e.g. Dream Car)'),
+                decoration: InputDecoration(labelText: 'title'.tr(context)),
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: 16),

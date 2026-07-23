@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/finance_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/language_provider.dart';
 import 'screens/biometric_lock_screen.dart';
 import 'screens/root_shell.dart';
 import 'utils/app_theme.dart';
@@ -99,6 +100,7 @@ class _FinanceTrackerAppState extends State<FinanceTrackerApp> with WidgetsBindi
       providers: [
         ChangeNotifierProvider(create: (_) => FinanceProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
       child: Consumer<FinanceProvider>(
         builder: (context, provider, _) {

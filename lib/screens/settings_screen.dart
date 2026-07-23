@@ -9,6 +9,8 @@ import 'categories_screen.dart';
 import '../providers/auth_provider.dart';
 import '../services/backup_service.dart';
 import '../services/ai_service.dart';
+import '../providers/language_provider.dart';
+import '../utils/translations.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -78,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text('settings'.tr(context))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
         children: [
@@ -184,7 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _sectionTitle('CLOUD BACKUP (GOOGLE DRIVE)', isDark),
+          _sectionTitle('data_management'.tr(context), isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
@@ -220,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.cloud_upload_outlined, color: AppColors.primary),
-                    title: const Text('Backup Now', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: Text('backup_data'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: FutureBuilder<String?>(
                       future: BackupService.getLastBackupTime(),
                       builder: (context, snapshot) {
@@ -256,8 +258,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.cloud_download_outlined, color: AppColors.income),
-                    title: const Text('Restore Data', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Download backup from Google Drive', style: TextStyle(fontSize: 12)),
+                    title: Text('restore_data'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text('restore_data_sub'.tr(context), style: const TextStyle(fontSize: 12)),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () async {
                       final client = await authProvider.getAuthenticatedClient();
@@ -287,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _sectionTitle('AI ASSISTANT', isDark),
+          _sectionTitle('ai_assistant'.tr(context), isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
@@ -298,8 +300,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: ListTile(
               leading: const Icon(Icons.vpn_key_rounded, color: Colors.amber),
-              title: const Text('Gemini API Key', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Required for AI Financial Advisor', style: TextStyle(fontSize: 12)),
+              title: Text('gemini_api_key'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('gemini_api_key_sub'.tr(context), style: const TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
                 _showApiKeyDialog();
@@ -307,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _sectionTitle('PREFERENCES', isDark),
+          _sectionTitle('preferences'.tr(context), isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
@@ -319,6 +321,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 ListTile(
+                  leading: const Icon(Icons.language_rounded, color: AppColors.primary),
+                  title: Text('language'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('language_sub'.tr(context), style: const TextStyle(fontSize: 12)),
+                  trailing: DropdownButton<String>(
+                    value: context.watch<LanguageProvider>().languageCode,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                      DropdownMenuItem(value: 'si', child: Text('සිංහල')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) context.read<LanguageProvider>().setLanguage(v);
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
                   title: const Text('Your Name', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(provider.userName.isEmpty ? 'Not set' : provider.userName),
@@ -328,7 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.dark_mode_outlined, color: AppColors.primary),
-                  title: const Text('Theme Mode', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text('dark_mode'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: DropdownButton<ThemeMode>(
                     value: provider.themeMode,
                     underline: const SizedBox.shrink(),
@@ -345,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.attach_money_rounded, color: AppColors.primary),
-                  title: const Text('Currency Symbol', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text('currency'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: DropdownButton<String>(
                     value: _currencies.contains(provider.currencySymbol) ? provider.currencySymbol : _currencies.first,
                     underline: const SizedBox.shrink(),
@@ -359,7 +378,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _sectionTitle('MANAGE DATA', isDark),
+          _sectionTitle('manage_accounts'.tr(context), isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
@@ -372,14 +391,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
-                  title: const Text('Accounts & Wallets', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text('manage_accounts'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsScreen())),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.category_outlined, color: AppColors.primary),
-                  title: const Text('Transaction Categories', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text('transaction_categories'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesScreen())),
                 ),
@@ -387,7 +406,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _sectionTitle('ABOUT APP', isDark),
+          _sectionTitle('about_app'.tr(context), isDark),
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color,
@@ -431,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Gemini API Key'),
+        title: Text('gemini_api_key'.tr(context)),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
@@ -443,7 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr(context)),
           ),
           ElevatedButton(
             onPressed: () async {

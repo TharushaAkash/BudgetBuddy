@@ -16,6 +16,7 @@ import 'petty_cash_screen.dart';
 import 'transactions_screen.dart';
 import 'goals_screen.dart';
 import '../providers/auth_provider.dart';
+import '../utils/translations.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -85,12 +86,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 children: [
-                  _buildDrawerItem(context, Icons.account_balance_wallet_rounded, 'Petty Cash', const PettyCashScreen()),
-                  _buildDrawerItem(context, Icons.payment_rounded, 'Installments', const InstallmentsScreen()),
-                  _buildDrawerItem(context, Icons.flag_rounded, 'Goals', const GoalsScreen()),
+                  _buildDrawerItem(context, Icons.account_balance_wallet_rounded, 'petty_cash'.tr(context), const PettyCashScreen()),
+                  _buildDrawerItem(context, Icons.payment_rounded, 'loans'.tr(context), const InstallmentsScreen()),
+                  _buildDrawerItem(context, Icons.flag_rounded, 'financial_goals'.tr(context), const GoalsScreen()),
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Divider(height: 1)),
-                  _buildDrawerItem(context, Icons.arrow_downward_rounded, 'Income', const TransactionsScreen(initialType: CategoryType.income), color: AppColors.income),
-                  _buildDrawerItem(context, Icons.arrow_upward_rounded, 'Expenses', const TransactionsScreen(initialType: CategoryType.expense), color: AppColors.expense),
+                  _buildDrawerItem(context, Icons.arrow_downward_rounded, 'income'.tr(context), const TransactionsScreen(initialType: CategoryType.income), color: AppColors.income),
+                  _buildDrawerItem(context, Icons.arrow_upward_rounded, 'expense'.tr(context), const TransactionsScreen(initialType: CategoryType.expense), color: AppColors.expense),
                 ],
               ),
             ),
@@ -168,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     borderRadius: BorderRadius.circular(20),
                     child: SummaryCard(
-                      label: 'Income this month',
+                      label: 'income_this_month'.tr(context),
                       amount: Formatters.currency(provider.monthlyIncome, provider.currencySymbol),
                       icon: Icons.arrow_downward_rounded,
                       color: AppColors.income,
@@ -180,7 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${incPct >= 0 ? '+' : ''}${incPct.toStringAsFixed(1)}% vs last month',
+                          '${incPct >= 0 ? '+' : ''}${incPct.toStringAsFixed(1)}% ${'vs_last_month'.tr(context)}',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -191,18 +192,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: InkWell(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const TransactionsScreen(initialType: CategoryType.expense),
-                      ),
-                    ),
+                  child: ClipRRect(
+                    clipBehavior: Clip.antiAlias,
                     borderRadius: BorderRadius.circular(20),
                     child: SummaryCard(
-                      label: 'Expense this month',
+                      label: 'expense_this_month'.tr(context),
                       amount: Formatters.currency(provider.monthlyExpense, provider.currencySymbol),
                       icon: Icons.arrow_upward_rounded,
                       color: AppColors.expense,
@@ -214,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${expPct >= 0 ? '+' : ''}${expPct.toStringAsFixed(1)}% vs last month',
+                          '${expPct >= 0 ? '+' : ''}${expPct.toStringAsFixed(1)}% ${'vs_last_month'.tr(context)}',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -285,14 +281,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
             _buildSectionHeader(
               context,
-              'Recent Transactions',
+              'recent_transactions'.tr(context),
               onSeeAll: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen()));
               },
             ),
             const SizedBox(height: 10),
             if (provider.recentTransactions.isEmpty)
-              _emptyState('No transactions yet. Tap + to add one.')
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Text(
+                    'no_transactions_yet'.tr(context),
+                    style: TextStyle(
+                      color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              )
             else
               Container(
                 decoration: BoxDecoration(
@@ -327,123 +334,192 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTransactionScreen()));
           },
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Transaction', style: TextStyle(fontWeight: FontWeight.bold)),
+          label: Text('add_transaction'.tr(context), style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ),
     );
   }
 
   Widget _buildHeroBalanceCard(BuildContext context, FinanceProvider provider) {
+    return AspectRatio(
+      aspectRatio: 1.586,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0A3A2F), Color(0xFF155E4F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0A3A2F).withValues(alpha: 0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'total_net_worth'.tr(context).toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => setState(() => _isBalanceHidden = !_isBalanceHidden),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isBalanceHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.contactless_rounded, color: Colors.white70, size: 24),
+                  ],
+                ),
+              ],
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isBalanceHidden
+                            ? '••••••••'
+                            : Formatters.currency(provider.totalBalance, provider.currencySymbol),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '****  ****  ****  8888',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 14,
+                          letterSpacing: 3,
+                          fontFamily: 'Courier',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildEMVChip(),
+              ],
+            ),
+            Row(
+              children: provider.accounts
+                  .where((a) => a.type == AccountType.cash || a.type == AccountType.bank || a.type == AccountType.petty_cash)
+                  .take(3)
+                  .map((a) {
+                return Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(a.icon, color: Colors.white70, size: 13),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              a.name,
+                              style: const TextStyle(color: Colors.white70, fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isBalanceHidden
+                            ? '••••'
+                            : Formatters.currencyCompact(provider.accountBalance(a.id), provider.currencySymbol),
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEMVChip() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      width: 42,
+      height: 32,
       decoration: BoxDecoration(
-        gradient: AppColors.heroGradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(6),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE5C158), Color(0xFFF6E27A), Color(0xFFE5C158)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.2), width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 2,
+            offset: const Offset(1, 1),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.income,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'TOTAL NET WORTH',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-              InkWell(
-                onTap: () => setState(() => _isBalanceHidden = !_isBalanceHidden),
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    _isBalanceHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                    color: Colors.white70,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _isBalanceHidden
-                ? '••••••••'
-                : Formatters.currency(provider.totalBalance, provider.currencySymbol),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            height: 1,
-            color: Colors.white.withValues(alpha: 0.15),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: provider.accounts
-                .where((a) => a.type == AccountType.cash || a.type == AccountType.bank || a.type == AccountType.petty_cash)
-                .take(3)
-                .map((a) {
-              return Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(a.icon, color: Colors.white70, size: 13),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            a.name,
-                            style: const TextStyle(color: Colors.white70, fontSize: 11),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _isBalanceHidden
-                          ? '••••'
-                          : Formatters.currencyCompact(provider.accountBalance(a.id), provider.currencySymbol),
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+      child: CustomPaint(
+        painter: EMVChipPainter(),
       ),
     );
   }
@@ -628,20 +704,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _emptyState(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.inbox_rounded, size: 40, color: Colors.grey.shade400),
-            const SizedBox(height: 8),
-            Text(text, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildDrawerItem(BuildContext context, IconData icon, String title, Widget destination, {Color? color}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -737,3 +800,41 @@ class _LiveCountdownState extends State<_LiveCountdown> {
   }
 }
 
+class EMVChipPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+
+    final w = size.width;
+    final h = size.height;
+
+    // Center oval
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.35, h * 0.2, w * 0.3, h * 0.6),
+        const Radius.circular(5),
+      ),
+      paint,
+    );
+    
+    // Horizontal lines
+    canvas.drawLine(Offset(0, h * 0.35), Offset(w * 0.35, h * 0.35), paint);
+    canvas.drawLine(Offset(0, h * 0.65), Offset(w * 0.35, h * 0.65), paint);
+    
+    canvas.drawLine(Offset(w * 0.65, h * 0.35), Offset(w, h * 0.35), paint);
+    canvas.drawLine(Offset(w * 0.65, h * 0.65), Offset(w, h * 0.65), paint);
+
+    // Vertical lines
+    canvas.drawLine(Offset(w * 0.2, 0), Offset(w * 0.2, h * 0.35), paint);
+    canvas.drawLine(Offset(w * 0.2, h * 0.65), Offset(w * 0.2, h), paint);
+    
+    canvas.drawLine(Offset(w * 0.8, 0), Offset(w * 0.8, h * 0.35), paint);
+    canvas.drawLine(Offset(w * 0.8, h * 0.65), Offset(w * 0.8, h), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
