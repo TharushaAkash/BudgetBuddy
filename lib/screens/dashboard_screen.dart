@@ -51,53 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : (provider.monthlyExpense > 0 ? 100.0 : 0.0);
 
     return Scaffold(
-      drawer: Drawer(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 50, bottom: 20, left: 24, right: 24),
-              decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: Colors.white24,
-                    backgroundImage: user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
-                    child: user?.photoUrl == null
-                        ? const Icon(Icons.person_rounded, color: Colors.white, size: 36)
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    user?.displayName ?? (provider.userName.isEmpty ? 'Finance Tracker' : provider.userName),
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  if (user?.email != null) ...[
-                    const SizedBox(height: 4),
-                    Text(user!.email, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                children: [
-                  _buildDrawerItem(context, Icons.account_balance_wallet_rounded, 'petty_cash'.tr(context), const PettyCashScreen()),
-                  _buildDrawerItem(context, Icons.payment_rounded, 'loans'.tr(context), const InstallmentsScreen()),
-                  _buildDrawerItem(context, Icons.flag_rounded, 'financial_goals'.tr(context), const GoalsScreen()),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Divider(height: 1)),
-                  _buildDrawerItem(context, Icons.arrow_downward_rounded, 'income'.tr(context), const TransactionsScreen(initialType: CategoryType.income), color: AppColors.income),
-                  _buildDrawerItem(context, Icons.arrow_upward_rounded, 'expense'.tr(context), const TransactionsScreen(initialType: CategoryType.expense), color: AppColors.expense),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      drawer: _buildDrawer(context, provider, authProvider, user, isDark),
       appBar: AppBar(
         titleSpacing: 16,
         title: Row(
@@ -706,25 +660,249 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 
-  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, Widget destination, {Color? color}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final itemColor = color ?? (isDark ? AppColors.primaryLight : AppColors.primary);
-    
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
+  Widget _buildDrawer(BuildContext context, provider, authProvider, user, bool isDark) {
+    return Drawer(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Container(
         decoration: BoxDecoration(
-          color: itemColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF0B0F17), Color(0xFF111827)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFFFFFFFF), Color(0xFFF1F5F9)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
         ),
-        child: Icon(icon, color: itemColor, size: 22),
+        child: Column(
+          children: [
+            // ── Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.only(top: 52, bottom: 28, left: 24, right: 24),
+              decoration: const BoxDecoration(
+                gradient: AppColors.heroGradient,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Avatar with glow ring
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryLight.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 38,
+                      backgroundColor: Colors.white24,
+                      backgroundImage: user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
+                      child: user?.photoUrl == null
+                          ? const Icon(Icons.person_rounded, color: Colors.white, size: 38)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    user?.displayName ?? (provider.userName.isEmpty ? 'BudgetBuddy' : provider.userName),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  if (user?.email != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      user!.email,
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 12),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  // Quick stats strip
+                  Row(
+                    children: [
+                      _drawerStat('Income', provider.currencySymbol + _shortNum(provider.monthlyIncome), Icons.arrow_downward_rounded, AppColors.income),
+                      const SizedBox(width: 12),
+                      _drawerStat('Expense', provider.currencySymbol + _shortNum(provider.monthlyExpense), Icons.arrow_upward_rounded, AppColors.expense),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Nav Items ──
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                children: [
+                  _drawerLabel('NAVIGATE', isDark),
+                  const SizedBox(height: 6),
+                  _buildDrawerItem(context, Icons.account_balance_wallet_rounded, 'petty_cash'.tr(context), const PettyCashScreen(), isDark: isDark),
+                  _buildDrawerItem(context, Icons.payment_rounded, 'loans'.tr(context), const InstallmentsScreen(), isDark: isDark),
+                  _buildDrawerItem(context, Icons.flag_rounded, 'financial_goals'.tr(context), const GoalsScreen(), isDark: isDark),
+                  const SizedBox(height: 16),
+                  _drawerLabel('TRANSACTIONS', isDark),
+                  const SizedBox(height: 6),
+                  _buildDrawerItem(context, Icons.arrow_downward_rounded, 'income'.tr(context), const TransactionsScreen(initialType: CategoryType.income), color: AppColors.income, isDark: isDark),
+                  _buildDrawerItem(context, Icons.arrow_upward_rounded, 'expense'.tr(context), const TransactionsScreen(initialType: CategoryType.expense), color: AppColors.expense, isDark: isDark),
+                ],
+              ),
+            ),
+
+            // ── Footer ──
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.auto_graph_rounded, size: 16, color: AppColors.primaryLight.withValues(alpha: 0.5)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'BudgetBuddy v1.0',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
-      },
+    );
+  }
+
+  Widget _drawerLabel(String label, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 2),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.5,
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3),
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerStat(String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 9, letterSpacing: 0.5)),
+                Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _shortNum(double val) {
+    if (val >= 1000000) return '${(val / 1000000).toStringAsFixed(1)}M';
+    if (val >= 1000) return '${(val / 1000).toStringAsFixed(1)}K';
+    return val.toStringAsFixed(0);
+  }
+
+  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, Widget destination, {Color? color, bool isDark = false}) {
+    final itemColor = color ?? AppColors.primaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: itemColor.withValues(alpha: isDark ? 0.07 : 0.06),
+              border: Border.all(
+                color: itemColor.withValues(alpha: isDark ? 0.12 : 0.1),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [itemColor.withValues(alpha: 0.9), itemColor],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: itemColor.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: itemColor.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
