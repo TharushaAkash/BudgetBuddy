@@ -16,11 +16,24 @@ class BudgetsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Budgets')),
       body: provider.budgets.isEmpty
-          ? Center(child: Text('No budgets set yet.\nTap + to create one.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500)))
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.pie_chart_outline_rounded, size: 56, color: Colors.grey.shade400),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No budgets set yet.\nTap + to create one.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                  ),
+                ],
+              ),
+            )
           : ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
               itemCount: provider.budgets.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
               itemBuilder: (context, i) {
                 final b = provider.budgets[i];
                 return BudgetProgressTile(
@@ -30,10 +43,13 @@ class BudgetsScreen extends StatelessWidget {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: null,
-        onPressed: () => _showBudgetSheet(context, provider),
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 74),
+        child: FloatingActionButton(
+          heroTag: 'budget_fab',
+          onPressed: () => _showBudgetSheet(context, provider),
+          child: const Icon(Icons.add_rounded),
+        ),
       ),
     );
   }
@@ -47,28 +63,53 @@ class BudgetsScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setState) {
-            return Padding(
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(existing == null ? 'New Budget' : 'Edit Budget', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        existing == null ? 'New Budget' : 'Edit Budget',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: categoryId,
-                    decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
+                    initialValue: categoryId,
+                    decoration: const InputDecoration(labelText: 'Category'),
                     items: expenseCategories
-                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                        .map((c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Row(
+                                children: [
+                                  Icon(c.icon, size: 18, color: c.color),
+                                  const SizedBox(width: 8),
+                                  Text(c.name),
+                                ],
+                              ),
+                            ))
                         .toList(),
                     onChanged: (v) => setState(() => categoryId = v),
                   ),
@@ -76,25 +117,32 @@ class BudgetsScreen extends StatelessWidget {
                   TextField(
                     controller: limitController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Budget limit', prefixText: '${provider.currencySymbol} ', border: const OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: 'Budget Limit',
+                      prefixText: '${provider.currencySymbol} ',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<BudgetPeriod>(
-                    value: period,
-                    decoration: const InputDecoration(labelText: 'Period', border: OutlineInputBorder()),
+                    initialValue: period,
+                    decoration: const InputDecoration(labelText: 'Period'),
                     items: BudgetPeriod.values
-                        .map((p) => DropdownMenuItem(value: p, child: Text(p.name[0].toUpperCase() + p.name.substring(1))))
+                        .map((p) => DropdownMenuItem(
+                              value: p,
+                              child: Text(p.name[0].toUpperCase() + p.name.substring(1)),
+                            ))
                         .toList(),
                     onChanged: (v) => setState(() => period = v!),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   SizedBox(
-                    height: 48,
+                    width: double.infinity,
+                    height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       onPressed: () async {
                         final limit = double.tryParse(limitController.text);
@@ -114,7 +162,7 @@ class BudgetsScreen extends StatelessWidget {
                         }
                         if (ctx.mounted) Navigator.pop(ctx);
                       },
-                      child: const Text('Save Budget'),
+                      child: const Text('Save Budget', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -126,3 +174,4 @@ class BudgetsScreen extends StatelessWidget {
     );
   }
 }
+
