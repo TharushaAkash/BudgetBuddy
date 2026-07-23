@@ -23,7 +23,7 @@ class AiService {
       throw Exception('Gemini API Key not found.');
     }
 
-    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey');
+    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$apiKey');
     
     try {
       final response = await http.post(
