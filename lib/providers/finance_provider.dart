@@ -357,8 +357,8 @@ class FinanceProvider extends ChangeNotifier {
     bool isWithdrawal = bodyLower.contains('withdrawel') || bodyLower.contains('withdrawal') || bodyLower.contains('withdrawn');
     bool isDeposit = bodyLower.contains('deposit');
     
-    bool isCredit = bodyLower.contains('credited') || bodyLower.contains('received');
-    bool isDebit = bodyLower.contains('debited') || bodyLower.contains('paid');
+    bool isCredit = bodyLower.contains('credited') || bodyLower.contains('received') || bodyLower.contains('credit');
+    bool isDebit = bodyLower.contains('debited') || bodyLower.contains('paid') || bodyLower.contains('debit');
 
     if (isCredit || isDebit || isWithdrawal || isDeposit) {
       final amountRegex = RegExp(r'(?:lkr|rs\.?)\s*([\d,]+\.?\d*)', caseSensitive: false);
@@ -391,8 +391,25 @@ class FinanceProvider extends ChangeNotifier {
             );
           } else {
             final type = isCredit ? CategoryType.income : CategoryType.expense;
-            final title = isCredit ? 'Bank Credit (Auto)' : 'Bank Debit (Auto)';
+            final defaultTitle = isCredit ? 'Bank Credit (Auto)' : 'Bank Debit (Auto)';
             
+            String finalTitle = defaultTitle;
+            final toRegex = RegExp(r'\bto\b\s*(.+)', caseSensitive: false);
+            final toMatch = toRegex.firstMatch(body);
+            if (toMatch != null) {
+              final reasonPart = toMatch.group(1)!.trim();
+              final newlineIdx = reasonPart.indexOf('\n');
+              final dotIdx = reasonPart.indexOf('.');
+              int endIdx = reasonPart.length;
+              if (newlineIdx != -1 && newlineIdx < endIdx) endIdx = newlineIdx;
+              if (dotIdx != -1 && dotIdx < endIdx) endIdx = dotIdx;
+              
+              final extracted = reasonPart.substring(0, endIdx).trim();
+              if (extracted.isNotEmpty) {
+                finalTitle = extracted[0].toUpperCase() + extracted.substring(1);
+              }
+            }
+
             final defaultCat = categories.firstWhere(
               (c) => c.type == type, 
               orElse: () => categories.first
@@ -400,7 +417,7 @@ class FinanceProvider extends ChangeNotifier {
 
             t = TransactionModel(
               id: _uuid.v4(),
-              title: title,
+              title: finalTitle,
               amount: amount,
               type: type,
               categoryId: defaultCat.id,
