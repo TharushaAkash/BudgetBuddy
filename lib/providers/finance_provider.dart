@@ -224,10 +224,13 @@ class FinanceProvider extends ChangeNotifier {
   void _processSms(String sender, String body, [DateTime? date]) {
     final bodyLower = body.toLowerCase();
     
-    bool isCredit = bodyLower.contains('credited') || bodyLower.contains('deposited') || bodyLower.contains('received');
-    bool isDebit = bodyLower.contains('debited') || bodyLower.contains('withdrawn') || bodyLower.contains('paid');
+    bool isWithdrawal = bodyLower.contains('withdrawel') || bodyLower.contains('withdrawal') || bodyLower.contains('withdrawn');
+    bool isDeposit = bodyLower.contains('deposit');
+    
+    bool isCredit = bodyLower.contains('credited') || bodyLower.contains('received') || bodyLower.contains('credit');
+    bool isDebit = bodyLower.contains('debited') || bodyLower.contains('paid') || bodyLower.contains('debit');
 
-    if (isCredit || isDebit) {
+    if (isCredit || isDebit || isWithdrawal || isDeposit) {
       final amountRegex = RegExp(r'(?:lkr|rs\.?)\s*([\d,]+\.?\d*)', caseSensitive: false);
       final match = amountRegex.firstMatch(bodyLower);
       if (match != null) {
@@ -235,24 +238,65 @@ class FinanceProvider extends ChangeNotifier {
         final amount = double.tryParse(amountStr) ?? 0;
 
         if (amount > 0 && accounts.isNotEmpty) {
-          final type = isCredit ? CategoryType.income : CategoryType.expense;
-          final title = isCredit ? 'Bank Deposit (Auto)' : 'Bank Withdrawal (Auto)';
+          TransactionModel t;
           
-          final defaultCat = categories.firstWhere(
-            (c) => c.type == type, 
-            orElse: () => categories.first
-          );
+          if (isWithdrawal || isDeposit) {
+            final bankAccount = accounts.firstWhere((a) => a.type == AccountType.bank, orElse: () => accounts.first);
+            final cashAccount = accounts.firstWhere((a) => a.type == AccountType.cash, orElse: () => accounts.first);
+            
+            final title = isWithdrawal ? 'ATM Withdrawal (Auto)' : 'Cash Deposit (Auto)';
+            final fromAccId = isWithdrawal ? bankAccount.id : cashAccount.id;
+            final toAccId = isWithdrawal ? cashAccount.id : bankAccount.id;
+            
+            t = TransactionModel(
+              id: _uuid.v4(),
+              title: title,
+              amount: amount,
+              type: CategoryType.expense,
+              categoryId: categories.isNotEmpty ? categories.first.id : 'c1',
+              accountId: fromAccId,
+              toAccountId: toAccId,
+              date: date ?? DateTime.now(),
+              note: 'Auto-added Transfer from SMS: $sender',
+            );
+          } else {
+            final type = isCredit ? CategoryType.income : CategoryType.expense;
+            final defaultTitle = isCredit ? 'Bank Credit (Auto)' : 'Bank Debit (Auto)';
+            
+            String finalTitle = defaultTitle;
+            final toRegex = RegExp(r'\bto\b\s*(.+)', caseSensitive: false);
+            final toMatch = toRegex.firstMatch(body);
+            if (toMatch != null) {
+              final reasonPart = toMatch.group(1)!.trim();
+              final newlineIdx = reasonPart.indexOf('\n');
+              final dotIdx = reasonPart.indexOf('.');
+              int endIdx = reasonPart.length;
+              if (newlineIdx != -1 && newlineIdx < endIdx) endIdx = newlineIdx;
+              if (dotIdx != -1 && dotIdx < endIdx) endIdx = dotIdx;
+              
+              final extracted = reasonPart.substring(0, endIdx).trim();
+              if (extracted.isNotEmpty) {
+                finalTitle = extracted[0].toUpperCase() + extracted.substring(1);
+              }
+            }
 
-          final t = TransactionModel(
-            id: _uuid.v4(),
-            title: title,
-            amount: amount,
-            type: type,
-            categoryId: defaultCat.id,
-            accountId: accounts.first.id,
-            date: date ?? DateTime.now(),
-            note: 'Auto-added from SMS: $sender',
-          );
+            final defaultCat = categories.firstWhere(
+              (c) => c.type == type, 
+              orElse: () => categories.first
+            );
+
+            t = TransactionModel(
+              id: _uuid.v4(),
+              title: finalTitle,
+              amount: amount,
+              type: type,
+              categoryId: defaultCat.id,
+              accountId: accounts.firstWhere((a) => a.type == AccountType.bank, orElse: () => accounts.first).id,
+              date: date ?? DateTime.now(),
+              note: 'Auto-added from SMS: $sender',
+            );
+          }
+          
           addTransaction(t);
         }
       }
