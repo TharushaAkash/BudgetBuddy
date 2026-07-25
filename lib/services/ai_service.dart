@@ -33,7 +33,7 @@ class AiService {
           'Authorization': 'Bearer $apiKey',
         },
         body: jsonEncode({
-          'model': 'llama3-8b-8192',
+          'model': 'llama-3.1-8b-instant',
           'max_tokens': 1000,
           'messages': [
             {'role': 'user', 'content': prompt}
