@@ -75,6 +75,13 @@ class AppTranslations {
       'from_account': 'From Account',
       'to_account': 'To Account',
       'title': 'Title',
+      
+      // Receipt Scanner
+      'scan_receipt': 'Scan Receipt',
+      'camera': 'Camera',
+      'gallery': 'Gallery',
+      'receipt_scanned_success': 'Receipt scanned successfully!',
+      'receipt_scanned_error': 'Could not read receipt data.',
     },
     'si': {
       // Dashboard
@@ -148,6 +155,13 @@ class AppTranslations {
       'from_account': 'මුදල් යවන ගිණුම',
       'to_account': 'මුදල් ලබන ගිණුම',
       'title': 'මාතෘකාව',
+      
+      // Receipt Scanner
+      'scan_receipt': 'බිල ස්කෑන් කරන්න (Scan Receipt)',
+      'camera': 'කැමරාව (Camera)',
+      'gallery': 'ගැලරිය (Gallery)',
+      'receipt_scanned_success': 'බිල සාර්ථකව ස්කෑන් කළා!',
+      'receipt_scanned_error': 'බිලේ දත්ත කියවීමට නොහැකි විය.',
     }
   };
 

@@ -9,6 +9,8 @@ import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../services/ai_service.dart';
 import '../utils/translations.dart';
+import '../services/receipt_scanner_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? existing;
@@ -35,6 +37,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Timer? _debounce;
   String? _aiPrediction;
   bool _isAiPredicting = false;
+  bool _isScanning = false;
 
   @override
   void initState() {
@@ -102,6 +105,62 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.dispose();
   }
 
+  Future<void> _scanReceipt() async {
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('scan_receipt'.tr(context)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: Text('camera'.tr(context)),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: Text('gallery'.tr(context)),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    setState(() => _isScanning = true);
+
+    try {
+      final data = await ReceiptScannerService.scanReceipt(source);
+      if (data != null && mounted) {
+        setState(() {
+          _type = CategoryType.expense;
+          _isTransfer = false;
+          if (data.amount != null) {
+            _amountController.text = data.amount!.toStringAsFixed(2);
+          }
+          if (data.merchantName != null && data.merchantName!.isNotEmpty) {
+            _titleController.text = data.merchantName!;
+          }
+          if (data.date != null) {
+            _date = data.date!;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('receipt_scanned_success'.tr(context))),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('receipt_scanned_error'.tr(context))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<FinanceProvider>();
@@ -122,6 +181,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.document_scanner_rounded, color: AppColors.primary),
+            onPressed: _isScanning ? null : _scanReceipt,
+            tooltip: 'Scan Receipt',
+          ),
           if (widget.existing != null)
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded, color: AppColors.expense),
@@ -133,8 +197,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Form(
-        key: _formKey,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
           children: [
@@ -447,8 +513,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ],
         ),
       ),
-    );
-  }
+      if (_isScanning)
+        Container(
+          color: Colors.black45,
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   String _recurrenceLabel(RecurrenceInterval r) {
     switch (r) {
