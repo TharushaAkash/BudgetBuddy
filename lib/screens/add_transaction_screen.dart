@@ -188,6 +188,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           SnackBar(content: Text('receipt_scanned_error'.tr(context, listen: false))),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isScanning = false);
     }

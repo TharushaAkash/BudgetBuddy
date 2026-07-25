@@ -90,46 +90,42 @@ Provide a very short 1-sentence prediction on whether this expense is safe to ma
 
     final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
     
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          'model': 'llama-3.2-11b-vision-preview',
-          'max_tokens': 1000,
-          'messages': [
-            {
-              'role': 'user',
-              'content': [
-                {
-                  'type': 'text',
-                  'text': 'Analyze this receipt image. Extract the total amount, the merchant or shop name, and the date if available. Return ONLY a valid JSON object in this exact format, with no markdown code blocks and no additional text: {"amount": 123.45, "merchantName": "Shop Name", "date": "2023-12-31"}. If a field cannot be found, set its value to null.'
-                },
-                {
-                  'type': 'image_url',
-                  'image_url': {
-                    'url': 'data:image/jpeg;base64,$base64Image'
-                  }
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: jsonEncode({
+        'model': 'llama-3.2-90b-vision-preview',
+        'max_tokens': 1000,
+        'messages': [
+          {
+            'role': 'user',
+            'content': [
+              {
+                'type': 'text',
+                'text': 'Analyze this receipt image. Extract the total amount, the merchant or shop name, and the date if available. Return ONLY a valid JSON object in this exact format, with no markdown code blocks and no additional text: {"amount": 123.45, "merchantName": "Shop Name", "date": "2023-12-31"}. If a field cannot be found, set its value to null.'
+              },
+              {
+                'type': 'image_url',
+                'image_url': {
+                  'url': 'data:image/jpeg;base64,$base64Image'
                 }
-              ]
-            }
-          ]
-        }),
-      );
+              }
+            ]
+          }
+        ]
+      }),
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['choices'][0]['message']['content'] ?? '';
-        final cleanContent = content.toString().replaceAll('```json', '').replaceAll('```', '').trim();
-        return jsonDecode(cleanContent);
-      }
-    } catch (e) {
-      // Return null to fallback to offline scanner or show error
-      print('Vision API Error: $e');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final content = data['choices'][0]['message']['content'] ?? '';
+      final cleanContent = content.toString().replaceAll('```json', '').replaceAll('```', '').trim();
+      return jsonDecode(cleanContent);
+    } else {
+      throw Exception('Groq API Error: ${response.statusCode} - ${response.body}');
     }
-    return null;
   }
 }
