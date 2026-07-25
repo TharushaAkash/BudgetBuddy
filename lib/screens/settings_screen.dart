@@ -326,16 +326,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                 ),
-                const Divider(height: 1),
-                SwitchListTile(
-                  secondary: const Icon(Icons.document_scanner_rounded, color: Colors.purple),
-                  title: Text('use_ai_scanner'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text('use_ai_scanner_sub'.tr(context), style: const TextStyle(fontSize: 12)),
-                  value: context.watch<LanguageProvider>().useAiScanner,
-                  onChanged: (bool value) {
-                    context.read<LanguageProvider>().setUseAiScanner(value);
-                  },
-                ),
               ],
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/pdf_service.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -30,7 +31,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final sortedEntries = expenseMap.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reports & Analytics')),
+      appBar: AppBar(
+        title: const Text('Reports & Analytics'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary),
+            onPressed: () => _showDownloadDialog(context, provider),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
         children: [
@@ -298,6 +307,65 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDownloadDialog(BuildContext context, FinanceProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Download Report', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.today, color: AppColors.primary),
+                title: const Text('Daily (Today)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final now = DateTime.now();
+                  final start = DateTime(now.year, now.month, now.day);
+                  final end = start.add(const Duration(days: 1));
+                  PdfService.generateAndPrintReport(provider, start, end, 'Daily Report');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.view_week, color: AppColors.primary),
+                title: const Text('Weekly (Last 7 Days)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final end = DateTime.now();
+                  final start = end.subtract(const Duration(days: 7));
+                  PdfService.generateAndPrintReport(provider, start, end, 'Weekly Report');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month, color: AppColors.primary),
+                title: const Text('Monthly (This Month)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final now = DateTime.now();
+                  final start = DateTime(now.year, now.month, 1);
+                  final end = DateTime(now.year, now.month + 1, 1);
+                  PdfService.generateAndPrintReport(provider, start, end, 'Monthly Report');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today, color: AppColors.primary),
+                title: const Text('Yearly (This Year)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final now = DateTime.now();
+                  final start = DateTime(now.year, 1, 1);
+                  final end = DateTime(now.year + 1, 1, 1);
+                  PdfService.generateAndPrintReport(provider, start, end, 'Yearly Report');
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

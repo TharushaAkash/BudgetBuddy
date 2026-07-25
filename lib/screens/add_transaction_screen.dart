@@ -139,26 +139,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     setState(() => _isScanning = true);
 
     try {
-      final useAi = context.read<LanguageProvider>().useAiScanner;
-      ScannedReceiptData? data;
-
-      if (useAi) {
-        final bytes = await pickedFile.readAsBytes();
-        final base64Image = base64Encode(bytes);
-        final result = await AiService.scanReceiptWithVision(base64Image);
-        
-        if (result != null) {
-          data = ScannedReceiptData(
-            amount: (result['amount'] as num?)?.toDouble(),
-            merchantName: result['merchantName']?.toString(),
-            date: result['date'] != null ? DateTime.tryParse(result['date']) : null,
-          );
-        } else {
-          throw Exception('AI Scanner failed to parse');
-        }
-      } else {
-        data = await ReceiptScannerService.scanReceipt(source);
-      }
+      ScannedReceiptData? data = await ReceiptScannerService.scanReceipt(source);
 
       if (data != null && mounted) {
         setState(() {
