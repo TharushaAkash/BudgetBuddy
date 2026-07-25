@@ -38,13 +38,47 @@ class PdfService {
     final totalBalance = provider.totalBalance;
     final installments = provider.installments;
 
-    final fmt = NumberFormat.currency(symbol: provider.currencySymbol, decimalDigits: 2);
-    final dateFmt = DateFormat('MMMM dd, yyyy');
+    // Use a basic ASCII currency symbol to avoid font rendering "squares"
+    final fmt = NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 2);
+    final dateFmt = DateFormat('MMM dd, yyyy');
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.zero,
+        pageTheme: pw.PageTheme(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(0),
+          buildBackground: (context) => pw.FullPage(
+            ignoreMargins: true,
+            child: pw.Container(color: _bgLight),
+          ),
+        ),
+        header: (context) {
+          if (context.pageNumber > 1) {
+            return pw.Container(
+              color: _purple,
+              padding: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('FINANCIAL REPORT', style: pw.TextStyle(color: PdfColors.white, fontSize: 14, fontWeight: pw.FontWeight.bold, letterSpacing: 1)),
+                  pw.Text('${dateFmt.format(start)} - ${dateFmt.format(end)}', style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                ],
+              ),
+            );
+          }
+          return pw.SizedBox.shrink();
+        },
+        footer: (context) => pw.Container(
+          color: _purple,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('BudgetBuddy - Personal Finance Tracker', style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+              pw.Text('Confidential - Page ${context.pageNumber} of ${context.pagesCount}', style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+            ],
+          ),
+        ),
         build: (context) => [
           // ═══════════════════ HEADER ═══════════════════
           pw.Container(
@@ -69,14 +103,14 @@ class PdfService {
                       children: [
                         pw.Container(
                           padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                          decoration: pw.BoxDecoration(
+                          decoration: const pw.BoxDecoration(
                             color: _teal,
-                            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                            borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
                           ),
                           child: pw.Text(rangeLabel.toUpperCase(), style: pw.TextStyle(color: PdfColors.white, fontSize: 11, fontWeight: pw.FontWeight.bold, letterSpacing: 1)),
                         ),
                         pw.SizedBox(height: 10),
-                        pw.Text('${dateFmt.format(start)} — ${dateFmt.format(end)}', style: const pw.TextStyle(color: PdfColors.white, fontSize: 11)),
+                        pw.Text('${dateFmt.format(start)} - ${dateFmt.format(end)}', style: const pw.TextStyle(color: PdfColors.white, fontSize: 11)),
                       ],
                     ),
                   ],
@@ -105,7 +139,6 @@ class PdfService {
 
           // ═══════════════════ BODY PADDING ═══════════════════
           pw.Container(
-            color: _bgLight,
             padding: const pw.EdgeInsets.fromLTRB(40, 35, 40, 35),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -135,7 +168,6 @@ class PdfService {
                     fmt.format(provider.accountBalance(a.id)),
                   ]).toList(),
                   footerRow: ['Total Balance', '', fmt.format(totalBalance)],
-                  fmt: fmt,
                 ),
 
                 pw.SizedBox(height: 35),
@@ -149,25 +181,11 @@ class PdfService {
                     rows: installments.map((i) {
                       final paid = (i.totalAmount / i.months) * i.paidMonths;
                       final rem = i.totalAmount - paid;
-                      return ['${i.item} · ${i.shop}', fmt.format(i.totalAmount), fmt.format(paid), fmt.format(rem)];
+                      return ['${i.item} - ${i.shop}', fmt.format(i.totalAmount), fmt.format(paid), fmt.format(rem)];
                     }).toList(),
-                    fmt: fmt,
                   ),
                 ],
 
-              ],
-            ),
-          ),
-
-          // ═══════════════════ FOOTER ═══════════════════
-          pw.Container(
-            color: _purple,
-            padding: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text('BudgetBuddy — Personal Finance Tracker', style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
-                pw.Text('Confidential · Private Report', style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
               ],
             ),
           ),
@@ -193,23 +211,23 @@ class PdfService {
   static pw.Widget _summaryCard(String label, String value, PdfColor color) {
     return pw.Expanded(
       child: pw.Container(
-        padding: const pw.EdgeInsets.fromLTRB(16, 18, 16, 18),
-        decoration: pw.BoxDecoration(
+        padding: const pw.EdgeInsets.fromLTRB(16, 16, 16, 18),
+        decoration: const pw.BoxDecoration(
           color: PdfColors.white,
-          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-          border: pw.Border(
-            top: pw.BorderSide(color: color, width: 3),
-            left: const pw.BorderSide(color: _border),
-            right: const pw.BorderSide(color: _border),
-            bottom: const pw.BorderSide(color: _border),
-          ),
+          borderRadius: pw.BorderRadius.all(pw.Radius.circular(10)),
         ),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
+            pw.Row(
+              children: [
+                pw.Container(width: 18, height: 3, color: color),
+              ],
+            ),
+            pw.SizedBox(height: 12),
             pw.Text(label, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textGrey, letterSpacing: 1.2)),
-            pw.SizedBox(height: 10),
-            pw.Text(value, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: color)),
+            pw.SizedBox(height: 8),
+            pw.Text(value, style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: color)),
           ],
         ),
       ),
@@ -237,13 +255,12 @@ class PdfService {
     required List<String> headers,
     required List<List<String>> rows,
     List<String>? footerRow,
-    required NumberFormat fmt,
   }) {
     return pw.Container(
-      decoration: pw.BoxDecoration(
+      decoration: const pw.BoxDecoration(
         color: PdfColors.white,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: const pw.Border.fromBorderSide(pw.BorderSide(color: _border)),
+        borderRadius: pw.BorderRadius.all(pw.Radius.circular(10)),
+        border: pw.Border.fromBorderSide(pw.BorderSide(color: _border)),
       ),
       child: pw.ClipRRect(
         horizontalRadius: 10,
@@ -279,7 +296,7 @@ class PdfService {
                     return pw.Expanded(
                       child: pw.Text(
                         e.value,
-                        style: pw.TextStyle(fontSize: 11, color: _textDark),
+                        style: const pw.TextStyle(fontSize: 11, color: _textDark),
                         textAlign: isLast ? pw.TextAlign.right : pw.TextAlign.left,
                       ),
                     );
