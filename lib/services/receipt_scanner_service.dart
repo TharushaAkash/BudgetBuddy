@@ -5,8 +5,9 @@ class ScannedReceiptData {
   final double? amount;
   final String? merchantName;
   final DateTime? date;
+  final String? categoryKey;
 
-  ScannedReceiptData({this.amount, this.merchantName, this.date});
+  ScannedReceiptData({this.amount, this.merchantName, this.date, this.categoryKey});
 }
 
 class ReceiptScannerService {
@@ -49,7 +50,7 @@ class ReceiptScannerService {
 
     // Attempt 1: Find amount near keywords like Total, Net, Rs, LKR
     // Matches something like "Total 1,234.50" or "Rs. 1234.50"
-    final amountRegex = RegExp(r'(?i)(?:total|net|amount|rs|lkr)[\s\:\.\-]*([\d\,]+\.\d{2})');
+    final amountRegex = RegExp(r'(?:total|net|amount|rs|lkr)[\s\:\.\-]*([\d\,]+\.\d{2})', caseSensitive: false);
     final amountMatches = amountRegex.allMatches(text);
     if (amountMatches.isNotEmpty) {
       // Get the last occurrence as "Total" usually appears at the bottom.
@@ -116,7 +117,13 @@ class ReceiptScannerService {
        }
     }
 
-    return ScannedReceiptData(amount: amount, merchantName: merchantName, date: date);
+    String? categoryKey;
+    final transportRegex = RegExp(r'\b(km|journey|route|taxi|uber|pickme|highway)\b', caseSensitive: false);
+    if (transportRegex.hasMatch(text)) {
+      categoryKey = 'transport';
+    }
+
+    return ScannedReceiptData(amount: amount, merchantName: merchantName, date: date, categoryKey: categoryKey);
   }
 
   static void dispose() {

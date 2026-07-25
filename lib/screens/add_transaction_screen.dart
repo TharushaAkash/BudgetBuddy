@@ -147,13 +147,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           if (data.date != null) {
             _date = data.date!;
           }
+          if (data.categoryKey != null) {
+            try {
+              final cat = context.read<FinanceProvider>().categories.firstWhere((c) => c.iconKey == data.categoryKey && c.type == CategoryType.expense);
+              _categoryId = cat.id;
+            } catch (_) {}
+          }
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('receipt_scanned_success'.tr(context))),
+          SnackBar(content: Text('receipt_scanned_success'.tr(context, listen: false))),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('receipt_scanned_error'.tr(context))),
+          SnackBar(content: Text('receipt_scanned_error'.tr(context, listen: false))),
         );
       }
     } finally {

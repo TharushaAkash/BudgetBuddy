@@ -171,8 +171,8 @@ class AppTranslations {
 }
 
 extension StringTranslate on String {
-  String tr(BuildContext context) {
-    final lang = Provider.of<LanguageProvider>(context, listen: true).languageCode;
+  String tr(BuildContext context, {bool listen = true}) {
+    final lang = Provider.of<LanguageProvider>(context, listen: listen).languageCode;
     return AppTranslations.get(this, lang);
   }
 }
