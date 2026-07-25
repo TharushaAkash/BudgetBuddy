@@ -312,24 +312,12 @@ class PdfService {
           pw.SizedBox(height: 20),
 
           // ═══════════════════ TRANSACTION HISTORY ═══════════════════
-          pw.Wrap(
-            children: [
-              _sectionTitle('TRANSACTION HISTORY'),
-              pw.SizedBox(height: 8),
-              _transactionTable(txns, openingBalance, fmt, dateFmt, provider),
-            ],
-          ),
+          _transactionTable(txns, openingBalance, fmt, dateFmt, provider),
 
           // ═══════════════════ LOANS & INSTALLMENTS ═══════════════════
           if (installments.isNotEmpty) ...[
             pw.SizedBox(height: 20),
-            pw.Wrap(
-              children: [
-                _sectionTitle('LOANS & INSTALLMENTS'),
-                pw.SizedBox(height: 8),
-                _loansTable(installments, fmt),
-              ],
-            ),
+            _loansTable(installments, fmt),
           ],
         ],
       ),
@@ -366,30 +354,37 @@ class PdfService {
     );
   }
 
-  static pw.Widget _sectionContainer({required String title, required pw.Widget child}) {
+  static pw.Widget _sectionContainer({
+    required String title,
+    required pw.Widget child,
+    pw.EdgeInsets padding = const pw.EdgeInsets.all(14),
+  }) {
     return pw.Container(
       decoration: pw.BoxDecoration(
         color: _cardBg,
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
         border: pw.Border.all(color: _border),
       ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: const pw.BoxDecoration(
-              color: _tableHeader,
-              borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(7)),
+      child: pw.ClipRRect(
+        horizontalRadius: 8,
+        verticalRadius: 8,
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: const pw.BoxDecoration(
+                color: _tableHeader,
+              ),
+              child: pw.Text(title, style: pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold)),
             ),
-            child: pw.Text(title, style: pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-          ),
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(14),
-            child: child,
-          ),
-        ],
+            pw.Padding(
+              padding: padding,
+              child: child,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -497,22 +492,14 @@ class PdfService {
     );
   }
 
-  static pw.Widget _sectionTitle(String title) {
-    return pw.Text(title, style: pw.TextStyle(color: _primary, fontSize: 10, fontWeight: pw.FontWeight.bold, letterSpacing: 0.5));
-  }
+
 
   static pw.Widget _transactionTable(List txns, double initialBalance, NumberFormat fmt, DateFormat dateFmt, FinanceProvider provider) {
-    return pw.Container(
-      decoration: pw.BoxDecoration(
-        color: _cardBg,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-        border: pw.Border.all(color: _border),
-      ),
-      child: pw.ClipRRect(
-        horizontalRadius: 8,
-        verticalRadius: 8,
-        child: pw.Column(
-          children: [
+    return _sectionContainer(
+      title: 'TRANSACTION HISTORY',
+      padding: pw.EdgeInsets.zero,
+      child: pw.Column(
+        children: [
             // Header
             pw.Container(
               color: _tableRowAlt,
@@ -579,22 +566,15 @@ class PdfService {
             }),
           ],
         ),
-      ),
     );
   }
 
   static pw.Widget _loansTable(List installments, NumberFormat fmt) {
-    return pw.Container(
-      decoration: pw.BoxDecoration(
-        color: _cardBg,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-        border: pw.Border.all(color: _border),
-      ),
-      child: pw.ClipRRect(
-        horizontalRadius: 8,
-        verticalRadius: 8,
-        child: pw.Column(
-          children: [
+    return _sectionContainer(
+      title: 'LOANS & INSTALLMENTS',
+      padding: pw.EdgeInsets.zero,
+      child: pw.Column(
+        children: [
             // Header
             pw.Container(
               color: _tableRowAlt,
@@ -631,7 +611,6 @@ class PdfService {
             }),
           ],
         ),
-      ),
     );
   }
 }
