@@ -298,14 +298,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
               ),
             ),
-            child: ListTile(
-              leading: const Icon(Icons.vpn_key_rounded, color: Colors.amber),
-              title: Text('gemini_api_key'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('gemini_api_key_sub'.tr(context), style: const TextStyle(fontSize: 12)),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                _showApiKeyDialog();
-              },
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.vpn_key_rounded, color: Colors.amber),
+                  title: Text('gemini_api_key'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('gemini_api_key_sub'.tr(context), style: const TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    _showApiKeyDialog();
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.translate_rounded, color: AppColors.primary),
+                  title: Text('ai_language'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('ai_language_sub'.tr(context), style: const TextStyle(fontSize: 12)),
+                  trailing: DropdownButton<String>(
+                    value: context.watch<LanguageProvider>().aiLanguageCode,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                      DropdownMenuItem(value: 'si', child: Text('සිංහල')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) context.read<LanguageProvider>().setAiLanguage(v);
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.document_scanner_rounded, color: Colors.purple),
+                  title: Text('use_ai_scanner'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('use_ai_scanner_sub'.tr(context), style: const TextStyle(fontSize: 12)),
+                  value: context.watch<LanguageProvider>().useAiScanner,
+                  onChanged: (bool value) {
+                    context.read<LanguageProvider>().setUseAiScanner(value);
+                  },
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),

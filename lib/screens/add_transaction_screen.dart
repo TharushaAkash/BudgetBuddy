@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'dart:async';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../providers/finance_provider.dart';
-import 'dart:async';
+import '../providers/language_provider.dart';
+import 'dart:convert';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../services/ai_service.dart';
@@ -83,10 +84,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     _debounce = Timer(const Duration(milliseconds: 1000), () async {
       try {
         final provider = context.read<FinanceProvider>();
+        final aiLang = context.read<LanguageProvider>().aiLanguageCode;
         final summary = provider.getFinancialSummary();
         final category = provider.categories.firstWhere((c) => c.id == _categoryId, orElse: () => CategoryModel(id: '', name: 'General', iconKey: 'other_expense', colorValue: 0, type: CategoryType.expense)).name;
         
-        final prediction = await AiService.getExpenseImpactPrediction(amount, category, summary);
+        final prediction = await AiService.getExpenseImpactPrediction(amount, category, summary, aiLang);
         if (mounted) setState(() => _aiPrediction = prediction);
       } catch (e) {
         print(e);
@@ -106,6 +108,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Future<void> _scanReceipt() async {
+    final picker = ImagePicker();
     final source = await showDialog<ImageSource>(
       context: context,
       builder: (context) => AlertDialog(
@@ -130,26 +133,49 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     if (source == null) return;
 
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile == null) return;
+
     setState(() => _isScanning = true);
 
     try {
-      final data = await ReceiptScannerService.scanReceipt(source);
+      final useAi = context.read<LanguageProvider>().useAiScanner;
+      ScannedReceiptData? data;
+
+      if (useAi) {
+        final bytes = await pickedFile.readAsBytes();
+        final base64Image = base64Encode(bytes);
+        final result = await AiService.scanReceiptWithVision(base64Image);
+        
+        if (result != null) {
+          data = ScannedReceiptData(
+            amount: (result['amount'] as num?)?.toDouble(),
+            merchantName: result['merchantName']?.toString(),
+            date: result['date'] != null ? DateTime.tryParse(result['date']) : null,
+          );
+        } else {
+          throw Exception('AI Scanner failed to parse');
+        }
+      } else {
+        data = await ReceiptScannerService.scanReceipt(source);
+      }
+
       if (data != null && mounted) {
         setState(() {
           _type = CategoryType.expense;
           _isTransfer = false;
-          if (data.amount != null) {
-            _amountController.text = data.amount!.toStringAsFixed(2);
+          if (data!.amount != null) {
+            _amountController.text = data!.amount!.toStringAsFixed(2);
           }
-          if (data.merchantName != null && data.merchantName!.isNotEmpty) {
-            _titleController.text = data.merchantName!;
+          if (data!.merchantName != null && data!.merchantName!.isNotEmpty) {
+            _titleController.text = data!.merchantName!;
           }
-          if (data.date != null) {
-            _date = data.date!;
+          if (data!.date != null) {
+            _date = data!.date!;
           }
-          if (data.categoryKey != null) {
+          if (data!.categoryKey != null) {
             try {
-              final cat = context.read<FinanceProvider>().categories.firstWhere((c) => c.iconKey == data.categoryKey && c.type == CategoryType.expense);
+              final cat = context.read<FinanceProvider>().categories.firstWhere((c) => c.iconKey == data!.categoryKey && c.type == CategoryType.expense);
               _categoryId = cat.id;
             } catch (_) {}
           }

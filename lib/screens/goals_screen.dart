@@ -4,9 +4,10 @@ import 'package:uuid/uuid.dart';
 
 import '../models/goal_model.dart';
 import '../providers/finance_provider.dart';
+import '../providers/language_provider.dart';
+import '../services/ai_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
-import '../services/ai_service.dart';
 import '../utils/translations.dart';
 
 class GoalsScreen extends StatelessWidget {
@@ -82,7 +83,8 @@ class _GoalCardState extends State<_GoalCard> {
     try {
       final provider = context.read<FinanceProvider>();
       final summary = provider.getFinancialSummary();
-      final text = await AiService.getGoalSuggestion(widget.goal, summary);
+      final aiLang = context.read<LanguageProvider>().aiLanguageCode;
+      final text = await AiService.getGoalSuggestion(widget.goal, summary, aiLang);
       if (mounted) setState(() => _suggestion = text);
     } catch (e) {
       // Ignore AI errors gracefully
