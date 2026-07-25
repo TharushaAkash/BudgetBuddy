@@ -35,7 +35,7 @@ class AiService {
           'X-Title': 'BudgetBuddy',
         },
         body: jsonEncode({
-          'model': 'google/gemini-2.5-flash',
+          'model': 'google/gemma-2-9b-it:free',
           'max_tokens': 1000,
           'messages': [
             {'role': 'user', 'content': prompt}
