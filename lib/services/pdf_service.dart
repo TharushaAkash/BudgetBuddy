@@ -232,31 +232,11 @@ class PdfService {
           
           pw.SizedBox(height: 20),
 
-          // ═══════════════════ CASH FLOW & BALANCES ═══════════════════
+          // ═══════════════════ BALANCES & BREAKDOWNS ═══════════════════
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Left side: Cash Flow Summary
-              pw.Expanded(
-                child: _sectionContainer(
-                  title: 'CASH FLOW SUMMARY',
-                  child: pw.Column(
-                    children: [
-                      _cashFlowRow('Opening Balance', fmt.format(openingBalance), isBold: false),
-                      pw.Divider(color: _border),
-                      _cashFlowRow('Total Income', '+ ${fmt.format(totalIncome)}', color: _green, isBold: true),
-                      pw.Divider(color: _border),
-                      _cashFlowRow('Total Expenses', '- ${fmt.format(totalExpense)}', color: _red, isBold: true),
-                      pw.Divider(color: _border),
-                      _cashFlowRow('Net Cash Flow', '${netSavings >= 0 ? '+' : '-'} ${fmt.format(netSavings.abs())}', color: netSavings >= 0 ? _green : _red, isBold: true),
-                      pw.Divider(color: _primary, thickness: 1.5),
-                      _cashFlowRow('Closing Balance', fmt.format(closingBalance), color: _primary, isBold: true, size: 12),
-                    ],
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 16),
-              // Right side: Account Balances
+              // Left side: Account Balances
               pw.Expanded(
                 child: _sectionContainer(
                   title: 'ACCOUNT BALANCES',
@@ -278,38 +258,33 @@ class PdfService {
                   ),
                 ),
               ),
-            ],
-          ),
-
-          pw.SizedBox(height: 20),
-
-          // ═══════════════════ PIE CHARTS ═══════════════════
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                child: _breakdownCard(
-                  title: 'INCOME BREAKDOWN',
-                  total: totalIncome,
-                  categoryData: incomeByCategory,
-                  palette: incomeColors,
-                  fmt: fmt,
-                ),
-              ),
               pw.SizedBox(width: 16),
+              // Right side: Income & Expense Breakdown
               pw.Expanded(
-                child: _breakdownCard(
-                  title: 'EXPENSE BREAKDOWN',
-                  total: totalExpense,
-                  categoryData: expenseByCategory,
-                  palette: expenseColors,
-                  fmt: fmt,
+                child: pw.Column(
+                  children: [
+                    _breakdownCard(
+                      title: 'INCOME BREAKDOWN',
+                      total: totalIncome,
+                      categoryData: incomeByCategory,
+                      palette: incomeColors,
+                      fmt: fmt,
+                    ),
+                    pw.SizedBox(height: 12),
+                    _breakdownCard(
+                      title: 'EXPENSE BREAKDOWN',
+                      total: totalExpense,
+                      categoryData: expenseByCategory,
+                      palette: expenseColors,
+                      fmt: fmt,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
 
-          pw.SizedBox(height: 20),
+          pw.NewPage(),
 
           // ═══════════════════ TRANSACTION HISTORY ═══════════════════
           _transactionTable(txns, openingBalance, fmt, dateFmt, provider),
