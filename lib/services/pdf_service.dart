@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/finance_provider.dart';
+import '../models/category_model.dart';
 
 class PdfService {
   // --- Color Palette ---
@@ -39,13 +40,54 @@ class PdfService {
     final savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0.0;
     
     final accounts = provider.accounts;
+    final categories = provider.categories;
     final installments = provider.installments;
+
+    // Income by Category
+    final Map<String, double> incomeByCategory = {};
+    for (final t in txns) {
+      if (!t.isTransfer && t.type == CategoryType.income) {
+        final cat = categories.firstWhere(
+          (c) => c.id == t.categoryId,
+          orElse: () => CategoryModel(id: '', name: 'Other Income', iconKey: '', colorValue: 0, type: CategoryType.income),
+        );
+        incomeByCategory[cat.name] = (incomeByCategory[cat.name] ?? 0) + t.amount;
+      }
+    }
+
+    // Expense by Category
+    final Map<String, double> expenseByCategory = {};
+    for (final t in txns) {
+      if (!t.isTransfer && t.type == CategoryType.expense) {
+        final cat = categories.firstWhere(
+          (c) => c.id == t.categoryId,
+          orElse: () => CategoryModel(id: '', name: 'Other Expense', iconKey: '', colorValue: 0, type: CategoryType.expense),
+        );
+        expenseByCategory[cat.name] = (expenseByCategory[cat.name] ?? 0) + t.amount;
+      }
+    }
+
+    final incomeColors = [
+      PdfColor.fromInt(0xFF10B981),
+      PdfColor.fromInt(0xFF3B82F6),
+      PdfColor.fromInt(0xFF8B5CF6),
+      PdfColor.fromInt(0xFFF59E0B),
+      PdfColor.fromInt(0xFF06B6D4),
+    ];
+
+    final expenseColors = [
+      PdfColor.fromInt(0xFFEF4444),
+      PdfColor.fromInt(0xFFF97316),
+      PdfColor.fromInt(0xFFEC4899),
+      PdfColor.fromInt(0xFF6366F1),
+      PdfColor.fromInt(0xFF14B8A6),
+    ];
 
     // Calculate Opening Balance
     double runningBalance = accounts.fold(0.0, (s, a) => s + a.openingBalance);
     for (final t in provider.transactions) {
       if (t.date.isBefore(start) && !t.isTransfer) {
-        runningBalance += t.type.name == 'income' ? t.amount : -t.amount;
+        runningBalance += t.type == CategoryType.income ? t.amount : -t.amount;
       }
     }
     final openingBalance = runningBalance;
@@ -56,8 +98,8 @@ class PdfService {
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
         pageTheme: pw.PageTheme(
+          pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(30),
         ),
         footer: (context) => pw.Container(
@@ -241,6 +283,34 @@ class PdfService {
 
           pw.SizedBox(height: 20),
 
+          // ═══════════════════ PIE CHARTS ═══════════════════
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: _breakdownCard(
+                  title: 'INCOME BREAKDOWN',
+                  total: totalIncome,
+                  categoryData: incomeByCategory,
+                  palette: incomeColors,
+                  fmt: fmt,
+                ),
+              ),
+              pw.SizedBox(width: 16),
+              pw.Expanded(
+                child: _breakdownCard(
+                  title: 'EXPENSE BREAKDOWN',
+                  total: totalExpense,
+                  categoryData: expenseByCategory,
+                  palette: expenseColors,
+                  fmt: fmt,
+                ),
+              ),
+            ],
+          ),
+
+          pw.SizedBox(height: 20),
+
           // ═══════════════════ TRANSACTION HISTORY ═══════════════════
           _sectionTitle('TRANSACTION HISTORY'),
           pw.SizedBox(height: 8),
@@ -317,6 +387,96 @@ class PdfService {
     );
   }
 
+  static pw.Widget _breakdownCard({
+    required String title,
+    required double total,
+    required Map<String, double> categoryData,
+    required List<PdfColor> palette,
+    required NumberFormat fmt,
+  }) {
+    if (categoryData.isEmpty) {
+      return _sectionContainer(
+        title: title,
+        child: pw.Container(
+          height: 100,
+          child: pw.Center(
+            child: pw.Text('No data recorded for this period', style: const pw.TextStyle(color: _textGrey, fontSize: 9)),
+          ),
+        ),
+      );
+    }
+
+    final entries = categoryData.entries.toList();
+
+    return _sectionContainer(
+      title: title,
+      child: pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Total', style: const pw.TextStyle(fontSize: 9, color: _textGrey)),
+              pw.Text(fmt.format(total), style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _textDark)),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Divider(color: _border, height: 1),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              // Pie Chart
+              pw.Container(
+                width: 75,
+                height: 75,
+                child: pw.Chart(
+                  grid: pw.PieGrid(),
+                  datasets: entries.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final val = e.value.value;
+                    final color = palette[idx % palette.length];
+                    return pw.PieDataSet(
+                      value: val,
+                      color: color,
+                    );
+                  }).toList(),
+                ),
+              ),
+              pw.SizedBox(width: 10),
+              // Legend
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: entries.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final name = e.value.key;
+                    final val = e.value.value;
+                    final pct = total > 0 ? (val / total * 100).toStringAsFixed(1) : '0';
+                    final color = palette[idx % palette.length];
+
+                    return pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                      child: pw.Row(
+                        children: [
+                          pw.Container(width: 6, height: 6, decoration: pw.BoxDecoration(color: color, shape: pw.BoxShape.circle)),
+                          pw.SizedBox(width: 4),
+                          pw.Expanded(
+                            child: pw.Text(name, style: const pw.TextStyle(fontSize: 8, color: _textDark), maxLines: 1),
+                          ),
+                          pw.Text('$pct%', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _textDark)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   static pw.Widget _cashFlowRow(String label, String value, {PdfColor color = _textDark, bool isBold = false, double size = 9}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 4),
@@ -387,12 +547,13 @@ class PdfService {
               double b = initialBalance;
               for (var i = 0; i <= entry.key; i++) {
                 if (!txns[i].isTransfer) {
-                  b += txns[i].type.name == 'income' ? txns[i].amount : -txns[i].amount;
+                  b += txns[i].type == CategoryType.income ? txns[i].amount : -txns[i].amount;
                 }
               }
 
-              final isIncome = t.type.name == 'income';
+              final isIncome = t.type == CategoryType.income;
               final acc = provider.accounts.firstWhere((a) => a.id == t.accountId, orElse: () => provider.accounts.first);
+              final cat = provider.categories.firstWhere((c) => c.id == t.categoryId, orElse: () => CategoryModel(id: '', name: isIncome ? 'Income' : 'Expense', iconKey: '', colorValue: 0, type: t.type));
               
               return pw.Container(
                 color: isAlt ? _tableRowAlt : PdfColors.white,
@@ -401,7 +562,7 @@ class PdfService {
                   children: [
                     pw.Expanded(flex: 2, child: pw.Text(dateFmt.format(t.date), style: const pw.TextStyle(fontSize: 8, color: _textGrey))),
                     pw.Expanded(flex: 3, child: pw.Text(t.title, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                    pw.Expanded(flex: 2, child: pw.Text(isIncome ? 'Income' : 'Expense', style: pw.TextStyle(fontSize: 8, color: isIncome ? _green : _red))),
+                    pw.Expanded(flex: 2, child: pw.Text(cat.name, style: pw.TextStyle(fontSize: 8, color: isIncome ? _green : _red))),
                     pw.Expanded(flex: 2, child: pw.Text(acc.name, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
                     pw.Expanded(flex: 2, child: pw.Text('${isIncome ? '+' : '-'} ${fmt.format(t.amount)}', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, color: isIncome ? _green : _red))),
                     pw.Expanded(flex: 2, child: pw.Text(fmt.format(b), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
