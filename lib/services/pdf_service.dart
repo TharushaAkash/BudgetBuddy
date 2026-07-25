@@ -312,17 +312,24 @@ class PdfService {
           pw.SizedBox(height: 20),
 
           // ═══════════════════ TRANSACTION HISTORY ═══════════════════
-          _sectionTitle('TRANSACTION HISTORY'),
-          pw.SizedBox(height: 8),
-          _transactionTable(txns, openingBalance, fmt, dateFmt, provider),
-
-          pw.SizedBox(height: 20),
+          pw.Wrap(
+            children: [
+              _sectionTitle('TRANSACTION HISTORY'),
+              pw.SizedBox(height: 8),
+              _transactionTable(txns, openingBalance, fmt, dateFmt, provider),
+            ],
+          ),
 
           // ═══════════════════ LOANS & INSTALLMENTS ═══════════════════
           if (installments.isNotEmpty) ...[
-            _sectionTitle('LOANS & INSTALLMENTS'),
-            pw.SizedBox(height: 8),
-            _loansTable(installments, fmt),
+            pw.SizedBox(height: 20),
+            pw.Wrap(
+              children: [
+                _sectionTitle('LOANS & INSTALLMENTS'),
+                pw.SizedBox(height: 8),
+                _loansTable(installments, fmt),
+              ],
+            ),
           ],
         ],
       ),
