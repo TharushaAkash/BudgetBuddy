@@ -184,6 +184,26 @@ class PdfService {
                       return ['${i.item} - ${i.shop}', fmt.format(i.totalAmount), fmt.format(paid), fmt.format(rem)];
                     }).toList(),
                   ),
+                  pw.SizedBox(height: 35),
+                ],
+
+                // ── TRANSACTIONS (STATEMENT) ──
+                if (provider.transactionsInRange(start, end).isNotEmpty) ...[
+                  _sectionHeader('Transaction Statement'),
+                  pw.SizedBox(height: 14),
+                  _table(
+                    headers: ['Date', 'Description', 'Type', 'Amount'],
+                    rows: provider.transactionsInRange(start, end).map((t) {
+                      final isIncome = t.type.name == 'income';
+                      final amountStr = '${isIncome ? '+' : '-'} ${fmt.format(t.amount)}';
+                      return [
+                        dateFmt.format(t.date),
+                        t.title,
+                        t.type.name.toUpperCase(),
+                        amountStr,
+                      ];
+                    }).toList(),
+                  ),
                 ],
 
               ],
