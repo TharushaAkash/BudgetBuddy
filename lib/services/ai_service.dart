@@ -7,23 +7,23 @@ import '../models/goal_model.dart';
 class AiService {
   static Future<String?> getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final key = prefs.getString('openrouter_api_key');
+    final key = prefs.getString('groq_api_key');
     if (key != null && key.isNotEmpty) return key;
     return null;
   }
 
   static Future<void> saveApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('openrouter_api_key', key.trim());
+    await prefs.setString('groq_api_key', key.trim());
   }
 
   static Future<String> _callAI(String prompt) async {
     final apiKey = await getApiKey();
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('OpenRouter API Key not found.');
+      throw Exception('Groq API Key not found.');
     }
 
-    final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
+    final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
     
     try {
       final response = await http.post(
@@ -31,11 +31,9 @@ class AiService {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',
-          'HTTP-Referer': 'https://budgetbuddy.app',
-          'X-Title': 'BudgetBuddy',
         },
         body: jsonEncode({
-          'model': 'google/gemma-2-9b-it:free',
+          'model': 'llama3-8b-8192',
           'max_tokens': 1000,
           'messages': [
             {'role': 'user', 'content': prompt}
