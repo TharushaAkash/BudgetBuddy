@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../utils/app_theme.dart';
+import '../services/update_service.dart';
 import 'accounts_screen.dart';
 import 'budgets_screen.dart';
 import 'dashboard_screen.dart';
@@ -32,6 +35,63 @@ class _RootShellState extends State<RootShell> {
     _NavItemData(icon: Icons.bar_chart_rounded, activeIcon: Icons.insert_chart_rounded, label: 'Reports'),
     _NavItemData(icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForUpdates();
+  }
+
+  Future<void> _checkForUpdates() async {
+    final updateInfo = await UpdateService.checkForUpdates();
+    if (updateInfo != null && updateInfo.isUpdateAvailable && mounted) {
+      _showUpdateDialog(updateInfo);
+    }
+  }
+
+  void _showUpdateDialog(UpdateInfo info) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.system_update_rounded, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text('Update Available', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('A new version of BudgetBuddy is available!', style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Text('Release: ${info.releaseTitle}', style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.primary)),
+              const SizedBox(height: 8),
+              const Text('Please update to get the latest features and bug fixes.', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Later', style: TextStyle(color: Colors.grey)),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final url = Uri.parse(info.downloadUrl);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: const Text('Update Now'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

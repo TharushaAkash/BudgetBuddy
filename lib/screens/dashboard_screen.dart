@@ -15,6 +15,7 @@ import 'installments_screen.dart';
 import 'petty_cash_screen.dart';
 import 'transactions_screen.dart';
 import 'goals_screen.dart';
+import 'about_screen.dart';
 import '../providers/auth_provider.dart';
 import '../utils/translations.dart';
 
@@ -156,27 +157,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ClipRRect(
-                    clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TransactionsScreen(initialType: CategoryType.expense),
+                      ),
+                    ),
                     borderRadius: BorderRadius.circular(20),
-                    child: SummaryCard(
-                      label: 'expense_this_month'.tr(context),
-                      amount: Formatters.currency(provider.monthlyExpense, provider.currencySymbol),
-                      icon: Icons.arrow_upward_rounded,
-                      color: AppColors.expense,
-                      subtitle: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: (expPct > 0 ? AppColors.expense : AppColors.income)
-                              .withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${expPct >= 0 ? '+' : ''}${expPct.toStringAsFixed(1)}% ${'vs_last_month'.tr(context)}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: expPct > 0 ? AppColors.expense : AppColors.income,
+                    child: ClipRRect(
+                      clipBehavior: Clip.antiAlias,
+                      borderRadius: BorderRadius.circular(20),
+                      child: SummaryCard(
+                        label: 'expense_this_month'.tr(context),
+                        amount: Formatters.currency(provider.monthlyExpense, provider.currencySymbol),
+                        icon: Icons.arrow_upward_rounded,
+                        color: AppColors.expense,
+                        subtitle: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (expPct > 0 ? AppColors.expense : AppColors.income)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${expPct >= 0 ? '+' : ''}${expPct.toStringAsFixed(1)}% ${'vs_last_month'.tr(context)}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: expPct > 0 ? AppColors.expense : AppColors.income,
+                            ),
                           ),
                         ),
                       ),
@@ -866,6 +876,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 6),
                   _buildDrawerItem(context, Icons.arrow_downward_rounded, 'income'.tr(context), const TransactionsScreen(initialType: CategoryType.income), color: AppColors.income, isDark: isDark),
                   _buildDrawerItem(context, Icons.arrow_upward_rounded, 'expense'.tr(context), const TransactionsScreen(initialType: CategoryType.expense), color: AppColors.expense, isDark: isDark),
+                  const SizedBox(height: 16),
+                  _drawerLabel('SYSTEM', isDark),
+                  const SizedBox(height: 6),
+                  _buildDrawerItem(context, Icons.info_outline_rounded, 'about_app'.tr(context), const AboutAppScreen(), isDark: isDark),
                 ],
               ),
             ),

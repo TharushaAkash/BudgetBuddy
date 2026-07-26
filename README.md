@@ -1,8 +1,18 @@
+<div align="center">
+<a href="https://sourceforge.net/p/budget-buddy" target="_blank"><img src="assets/icon.png" alt="ScheduleMate" width="120">
+
 # 💸 BudgetBuddy (Finance Tracker)
 
+<p>Keep track of your daily expenses, monitor your financial goals, manage installments, and receive personalized financial advices</p>
 
-A modern, full-featured, and highly intelligent personal finance management application built with **Flutter**. Keep track of your daily expenses, monitor your financial goals, manage installments, and receive personalized financial advice powered by OpenRouter AI.
+<p>
+    <a href="https://sourceforge.net/p/budget-buddy" target="_blank">🚀 SourceForge</a> •
+    <a href="#-Key Features">✨ Features</a> •
+    <a href="How to Build & Run">📦 Getting Started</a> •
+    <a href="#-contribution">🤝 Contributing</a>
+  </p>
 
+[![Download BudgetBuddy](https://img.shields.io/sourceforge/dm/budget-buddy.svg)](https://sourceforge.net/projects/budget-buddy/files/latest/download)
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)
@@ -14,9 +24,13 @@ A modern, full-featured, and highly intelligent personal finance management appl
 
 Ready to take control of your finances?
 
+[![Download BudgetBuddy](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/budget-buddy/files/latest/download)
+
 👉 **[Download the latest APK release here](../../releases)** 👈
 
+
 *(Head over to the Releases tab on GitHub to download and install the app on your Android device)*
+</div>
 
 ---
 

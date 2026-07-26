@@ -6,6 +6,7 @@ import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
 import 'accounts_screen.dart';
 import 'categories_screen.dart';
+import 'about_screen.dart';
 import '../providers/auth_provider.dart';
 import '../services/backup_service.dart';
 import '../services/ai_service.dart';
@@ -84,6 +85,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
         children: [
+          // Profile Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: isDark ? AppColors.cardGradientDark : AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Colors.grey.shade200,
+                    backgroundImage: user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
+                    child: user?.photoUrl == null
+                        ? Icon(Icons.person_rounded, size: 32, color: Colors.grey.shade400)
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName ?? (provider.userName.isEmpty ? 'BudgetBuddy User' : provider.userName),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.email ?? 'Sign in for cloud backup',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (user == null) ...[
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () => authProvider.signIn(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'Sign In',
+                              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (user != null)
+                  IconButton(
+                    icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                    onPressed: () => authProvider.signOut(),
+                    tooltip: 'Sign Out',
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           if (!_smsPermissionGranted) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 20),
@@ -197,29 +281,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: Column(
               children: [
-                if (user == null)
-                  ListTile(
-                    leading: const Icon(Icons.login_rounded, color: AppColors.primary),
-                    title: const Text('Sign in with Google', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Required for cloud backup', style: TextStyle(fontSize: 12)),
-                    onTap: () => authProvider.signIn(),
-                  )
-                else ...[
-                  ListTile(
-                    leading: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.white24,
-                      backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
-                      child: user.photoUrl == null ? const Icon(Icons.person, size: 16) : null,
-                    ),
-                    title: Text(user.displayName ?? 'Google Account', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(user.email, style: const TextStyle(fontSize: 12)),
-                    trailing: TextButton(
-                      onPressed: () => authProvider.signOut(),
-                      child: const Text('Sign Out', style: TextStyle(color: AppColors.expense)),
-                    ),
-                  ),
-                  const Divider(height: 1),
+
                   ListTile(
                     leading: const Icon(Icons.cloud_upload_outlined, color: AppColors.primary),
                     title: Text('backup_data'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -284,7 +346,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       }
                     },
                   ),
-                ],
               ],
             ),
           ),
@@ -384,6 +445,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+                  title: const Text('Installment Reminders', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Notify days before due date', style: TextStyle(fontSize: 12)),
+                  trailing: DropdownButton<int>(
+                    value: provider.installmentNotificationDays,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(value: 1, child: Text('1 Day')),
+                      DropdownMenuItem(value: 3, child: Text('3 Days')),
+                      DropdownMenuItem(value: 5, child: Text('5 Days')),
+                      DropdownMenuItem(value: 7, child: Text('7 Days')),
+                      DropdownMenuItem(value: 14, child: Text('14 Days')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) provider.setInstallmentNotificationDays(v);
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.attach_money_rounded, color: AppColors.primary),
                   title: Text('currency'.tr(context), style: const TextStyle(fontWeight: FontWeight.w600)),
                   trailing: DropdownButton<String>(
@@ -436,10 +517,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
               ),
             ),
-            child: const ListTile(
-              leading: Icon(Icons.info_outline_rounded, color: AppColors.primary),
-              title: Text('BudgetBuddy Finance Tracker', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('Version 1.0.0 • Modern Edition'),
+            child: ListTile(
+              leading: const Icon(Icons.info_outline_rounded, color: AppColors.primary),
+              title: const Text('BudgetBuddy Finance Tracker', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Version 1.0.0 • Modern Edition'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutAppScreen())),
             ),
           ),
         ],

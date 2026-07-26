@@ -33,12 +33,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reports & Analytics'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary),
-            onPressed: () => _showDownloadDialog(context, provider),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
@@ -167,6 +161,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ],
         ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+        child: FloatingActionButton.extended(
+          onPressed: () => _showDownloadDialog(context, provider),
+          icon: const Icon(Icons.picture_as_pdf_rounded),
+          label: const Text('Export PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
       ),
     );
   }

@@ -269,10 +269,9 @@ class PdfService {
       ),
     );
 
-    await Printing.layoutPdf(
-      onLayout: (_) async => pdf.save(),
-      name: 'Financial_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
-    );
+    final bytes = await pdf.save();
+    final filename = 'Financial_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf';
+    await Printing.sharePdf(bytes: bytes, filename: filename);
   }
 
   // ─────────────────────────── HELPERS ───────────────────────────

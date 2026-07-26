@@ -34,9 +34,9 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
-  Future<void> scheduleInstallmentNotifications(String id, String itemName, DateTime dueDate) async {
-    // Schedule notifications at 7 AM for the 5 days prior to the due date
-    for (int i = 5; i > 0; i--) {
+  Future<void> scheduleInstallmentNotifications(String id, String itemName, DateTime dueDate, int notifyDays) async {
+    // Schedule notifications at 7 AM for the [notifyDays] prior to the due date
+    for (int i = notifyDays; i > 0; i--) {
       final scheduleDate = dueDate.subtract(Duration(days: i));
       
       // Target time: 7:00 AM on the scheduled date
@@ -67,8 +67,8 @@ class NotificationService {
     }
   }
 
-  Future<void> cancelInstallmentNotifications(String id) async {
-    for (int i = 5; i > 0; i--) {
+  Future<void> cancelInstallmentNotifications(String id, int notifyDays) async {
+    for (int i = notifyDays; i > 0; i--) {
       await flutterLocalNotificationsPlugin.cancel(id: id.hashCode + i);
     }
   }

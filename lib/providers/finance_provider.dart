@@ -27,6 +27,7 @@ class FinanceProvider extends ChangeNotifier {
   static const _kUserNameKey = 'ft_user_name';
   static const _kBiometricKey = 'ft_biometric_enabled';
   static const _kNotificationsKey = 'ft_notifications_enabled';
+  static const _kInstallmentDaysKey = 'ft_installment_notif_days';
 
   final _uuid = const Uuid();
   final _smsPlugin = Readsms();
@@ -44,6 +45,7 @@ class FinanceProvider extends ChangeNotifier {
   String userName = '';
   bool isBiometricEnabled = false;
   bool notificationsEnabled = false;
+  int installmentNotificationDays = 5;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -98,6 +100,7 @@ class FinanceProvider extends ChangeNotifier {
     userName = prefs.getString(_kUserNameKey) ?? '';
     isBiometricEnabled = prefs.getBool(_kBiometricKey) ?? false;
     notificationsEnabled = prefs.getBool(_kNotificationsKey) ?? false;
+    installmentNotificationDays = prefs.getInt(_kInstallmentDaysKey) ?? 5;
 
     if (!accounts.any((a) => a.type == AccountType.petty_cash)) {
       accounts.add(AccountModel(id: _uuid.v4(), name: 'Petty Cash', type: AccountType.petty_cash, openingBalance: 0, colorValue: 0xFFFF9800));
@@ -173,6 +176,7 @@ class FinanceProvider extends ChangeNotifier {
 
   Future<void> setNotificationsEnabled(bool enabled) async {
     notificationsEnabled = enabled;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kNotificationsKey, enabled);
     
@@ -184,6 +188,14 @@ class FinanceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setInstallmentNotificationDays(int days) async {
+    installmentNotificationDays = days;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kInstallmentDaysKey, days);
+    rescheduleAllInstallmentNotifications();
+  }
+
   void rescheduleAllInstallmentNotifications() async {
     final service = NotificationService();
     await service.cancelAllNotifications();
@@ -191,11 +203,8 @@ class FinanceProvider extends ChangeNotifier {
     if (!notificationsEnabled) return;
 
     for (final inst in installments) {
-      if (!inst.isCompleted) {
-        final date = inst.nextPaymentDate;
-        if (date != null) {
-          await service.scheduleInstallmentNotifications(inst.id, inst.item, date);
-        }
+      if (!inst.isCompleted && inst.nextPaymentDate != null) {
+        await service.scheduleInstallmentNotifications(inst.id, inst.item, inst.nextPaymentDate!, installmentNotificationDays);
       }
     }
   }
