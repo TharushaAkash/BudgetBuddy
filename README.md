@@ -78,8 +78,8 @@ Here is a glimpse of BudgetBuddy in action:
 | **State Management** | Provider |
 | **Local Storage** | Shared Preferences |
 | **Charts & Visualization** | fl_chart |
-| **AI Integration** | OpenRouter AI (via HTTP) |
-| **Authentication** | local_auth (Biometrics), Google Sign-In |
+| **AI Integration** | Grok AI |
+| **Authentication** | local_auth (Biometrics), Google Sign-In, FireBase Authentication |
 | **Cloud Backup** | Google Drive API (googleapis) |
 | **Notifications** | flutter_local_notifications, timezone |
 | **Background Tasks** | workmanager |
@@ -88,6 +88,16 @@ Here is a glimpse of BudgetBuddy in action:
 | **Utilities** | intl, uuid |
 
 ---
+
+## 🦖 How to get a grok api
+1. Go to https://console.groq.com/keys and create a acount.
+2. Click the **Create API Key** button.
+3. Give a name for the API Key.
+4. Click **Submit** button.
+5. Then copy that created **API Key** and paste it in your app's **Groq API Key** field.
+
+---
+
 
 ## 🛠️ Project Structure
 
