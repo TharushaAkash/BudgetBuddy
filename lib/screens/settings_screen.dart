@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../providers/finance_provider.dart';
 import '../utils/app_theme.dart';
@@ -520,7 +521,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.info_outline_rounded, color: AppColors.primary),
               title: const Text('BudgetBuddy Finance Tracker', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Version 1.0.0 • Modern Edition'),
+              subtitle: FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  final version = snapshot.hasData ? snapshot.data!.version : '1.0.0';
+                  return Text('Version $version • Modern Edition');
+                }
+              ),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutAppScreen())),
             ),
