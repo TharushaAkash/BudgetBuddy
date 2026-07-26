@@ -8,15 +8,15 @@ import '../models/category_model.dart';
 
 class PdfService {
   // --- Color Palette ---
-  static const _primary = PdfColor.fromInt(0xFF4C3AE3); // Deep Blue/Purple
-  static const _textDark = PdfColor.fromInt(0xFF1E1E1E);
-  static const _textGrey = PdfColor.fromInt(0xFF6B7280);
+  static const _primary = PdfColor.fromInt(0xFF0F766E); // Deep Teal
+  static const _textDark = PdfColor.fromInt(0xFF0F172A);
+  static const _textGrey = PdfColor.fromInt(0xFF64748B);
   static const _green = PdfColor.fromInt(0xFF10B981);
-  static const _red = PdfColor.fromInt(0xFFEF4444);
+  static const _red = PdfColor.fromInt(0xFFF43F5E);
   static const _orange = PdfColor.fromInt(0xFFF59E0B);
-  static const _border = PdfColor.fromInt(0xFFE5E7EB);
-  static const _tableHeader = PdfColor.fromInt(0xFF6C47FF); // Bright Purple
-  static const _tableRowAlt = PdfColor.fromInt(0xFFF9F8FF); // Very light purple
+  static const _border = PdfColor.fromInt(0xFFE2E8F0);
+  static const _tableHeader = PdfColor.fromInt(0xFF14B8A6); // Light Teal
+  static const _tableRowAlt = PdfColor.fromInt(0xFFF8FAFC); // Very light greyish blue
   static const _cardBg = PdfColors.white;
 
   static Future<void> generateAndPrintReport(
@@ -67,7 +67,7 @@ class PdfService {
       }
     }
 
-    final incomeColors = [
+    const incomeColors = [
       PdfColor.fromInt(0xFF10B981),
       PdfColor.fromInt(0xFF3B82F6),
       PdfColor.fromInt(0xFF8B5CF6),
@@ -75,8 +75,8 @@ class PdfService {
       PdfColor.fromInt(0xFF06B6D4),
     ];
 
-    final expenseColors = [
-      PdfColor.fromInt(0xFFEF4444),
+    const expenseColors = [
+      PdfColor.fromInt(0xFFF43F5E),
       PdfColor.fromInt(0xFFF97316),
       PdfColor.fromInt(0xFFEC4899),
       PdfColor.fromInt(0xFF6366F1),
@@ -98,9 +98,9 @@ class PdfService {
 
     pdf.addPage(
       pw.MultiPage(
-        pageTheme: pw.PageTheme(
+        pageTheme: const pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(30),
+          margin: pw.EdgeInsets.all(30),
         ),
         footer: (context) => pw.Container(
           color: _primary,
@@ -232,53 +232,27 @@ class PdfService {
           
           pw.SizedBox(height: 20),
 
-          // ═══════════════════ BALANCES & BREAKDOWNS ═══════════════════
+          // ═══════════════════ BREAKDOWNS ═══════════════════
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Left side: Account Balances
               pw.Expanded(
-                child: _sectionContainer(
-                  title: 'ACCOUNT BALANCES',
-                  child: pw.Column(
-                    children: accounts.map((a) {
-                      return pw.Column(
-                        children: [
-                          _cashFlowRow(a.name, fmt.format(provider.accountBalance(a.id)), isBold: false),
-                          pw.Divider(color: _border),
-                        ],
-                      );
-                    }).toList()..add(
-                      pw.Column(
-                        children: [
-                          _cashFlowRow('Total Balance', fmt.format(provider.totalBalance), color: _primary, isBold: true, size: 12),
-                        ],
-                      )
-                    ),
-                  ),
+                child: _breakdownCard(
+                  title: 'INCOME BREAKDOWN',
+                  total: totalIncome,
+                  categoryData: incomeByCategory,
+                  palette: incomeColors,
+                  fmt: fmt,
                 ),
               ),
               pw.SizedBox(width: 16),
-              // Right side: Income & Expense Breakdown
               pw.Expanded(
-                child: pw.Column(
-                  children: [
-                    _breakdownCard(
-                      title: 'INCOME BREAKDOWN',
-                      total: totalIncome,
-                      categoryData: incomeByCategory,
-                      palette: incomeColors,
-                      fmt: fmt,
-                    ),
-                    pw.SizedBox(height: 12),
-                    _breakdownCard(
-                      title: 'EXPENSE BREAKDOWN',
-                      total: totalExpense,
-                      categoryData: expenseByCategory,
-                      palette: expenseColors,
-                      fmt: fmt,
-                    ),
-                  ],
+                child: _breakdownCard(
+                  title: 'EXPENSE BREAKDOWN',
+                  total: totalExpense,
+                  categoryData: expenseByCategory,
+                  palette: expenseColors,
+                  fmt: fmt,
                 ),
               ),
             ],
@@ -287,13 +261,10 @@ class PdfService {
           pw.NewPage(),
 
           // ═══════════════════ TRANSACTION HISTORY ═══════════════════
-          _transactionTable(txns, openingBalance, fmt, dateFmt, provider),
+          ..._transactionTable(txns, openingBalance, fmt, dateFmt, provider),
 
           // ═══════════════════ LOANS & INSTALLMENTS ═══════════════════
-          if (installments.isNotEmpty) ...[
-            pw.SizedBox(height: 20),
-            _loansTable(installments, fmt),
-          ],
+          if (installments.isNotEmpty) ..._loansTable(installments, fmt),
         ],
       ),
     );
@@ -454,138 +425,143 @@ class PdfService {
     );
   }
 
-  static pw.Widget _cashFlowRow(String label, String value, {PdfColor color = _textDark, bool isBold = false, double size = 9}) {
+
+
+
+
+  static pw.Widget _th(String text, {pw.TextAlign align = pw.TextAlign.left}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 4),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: pw.Text(text, textAlign: align, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+    );
+  }
+
+  static pw.Widget _td(String text, {pw.TextAlign align = pw.TextAlign.left, PdfColor color = _textDark, bool isBold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: pw.Text(text, textAlign: align, style: pw.TextStyle(fontSize: 8, color: color, fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+    );
+  }
+
+  static List<pw.Widget> _transactionTable(List txns, double initialBalance, NumberFormat fmt, DateFormat dateFmt, FinanceProvider provider) {
+    return [
+      pw.Header(
+        level: 1,
+        decoration: const pw.BoxDecoration(),
+        margin: const pw.EdgeInsets.only(bottom: 10, top: 10),
+        child: pw.Text('TRANSACTION HISTORY', style: pw.TextStyle(color: _primary, fontSize: 12, fontWeight: pw.FontWeight.bold)),
+      ),
+      pw.Table(
+        border: pw.TableBorder.all(color: _border, width: 0.5),
+        columnWidths: {
+          0: const pw.FlexColumnWidth(2),
+          1: const pw.FlexColumnWidth(3),
+          2: const pw.FlexColumnWidth(2),
+          3: const pw.FlexColumnWidth(2),
+          4: const pw.FlexColumnWidth(2),
+          5: const pw.FlexColumnWidth(2),
+        },
         children: [
-          pw.Text(label, style: pw.TextStyle(fontSize: size, color: _textDark, fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal)),
-          pw.Text(value, style: pw.TextStyle(fontSize: size, color: color, fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+          pw.TableRow(
+            repeat: true,
+            decoration: const pw.BoxDecoration(color: _tableHeader),
+            children: [
+              _th('DATE'),
+              _th('DESCRIPTION'),
+              _th('CATEGORY'),
+              _th('ACCOUNT'),
+              _th('AMOUNT', align: pw.TextAlign.right),
+              _th('BALANCE', align: pw.TextAlign.right),
+            ],
+          ),
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.white),
+            children: [
+              _td('-', color: _textGrey),
+              _td('Opening Balance'),
+              _td('-', color: _textGrey),
+              _td('-', color: _textGrey),
+              _td('-', align: pw.TextAlign.right, color: _textGrey),
+              _td(fmt.format(initialBalance), align: pw.TextAlign.right, isBold: true),
+            ],
+          ),
+          ...txns.asMap().entries.map((entry) {
+            final t = entry.value;
+            final isAlt = entry.key % 2 == 1;
+
+            double b = initialBalance;
+            for (var i = 0; i <= entry.key; i++) {
+              if (!txns[i].isTransfer) {
+                b += txns[i].type == CategoryType.income ? txns[i].amount : -txns[i].amount;
+              }
+            }
+
+            final isIncome = t.type == CategoryType.income;
+            final acc = provider.accounts.firstWhere((a) => a.id == t.accountId, orElse: () => provider.accounts.first);
+            final cat = provider.categories.firstWhere((c) => c.id == t.categoryId, orElse: () => CategoryModel(id: '', name: isIncome ? 'Income' : 'Expense', iconKey: '', colorValue: 0, type: t.type));
+
+            return pw.TableRow(
+              decoration: pw.BoxDecoration(color: isAlt ? _tableRowAlt : PdfColors.white),
+              children: [
+                _td(dateFmt.format(t.date), color: _textGrey),
+                _td(t.title),
+                _td(cat.name, color: isIncome ? _green : _red),
+                _td(acc.name),
+                _td('${isIncome ? '+' : '-'} ${fmt.format(t.amount)}', align: pw.TextAlign.right, color: isIncome ? _green : _red),
+                _td(fmt.format(b), align: pw.TextAlign.right),
+              ],
+            );
+          }),
         ],
       ),
-    );
+    ];
   }
 
-
-
-  static pw.Widget _transactionTable(List txns, double initialBalance, NumberFormat fmt, DateFormat dateFmt, FinanceProvider provider) {
-    return _sectionContainer(
-      title: 'TRANSACTION HISTORY',
-      padding: pw.EdgeInsets.zero,
-      child: pw.Column(
+  static List<pw.Widget> _loansTable(List installments, NumberFormat fmt) {
+    return [
+      pw.Header(
+        level: 1,
+        decoration: const pw.BoxDecoration(),
+        margin: const pw.EdgeInsets.only(bottom: 10, top: 20),
+        child: pw.Text('LOANS & INSTALLMENTS', style: pw.TextStyle(color: _primary, fontSize: 12, fontWeight: pw.FontWeight.bold)),
+      ),
+      pw.Table(
+        border: pw.TableBorder.all(color: _border, width: 0.5),
+        columnWidths: {
+          0: const pw.FlexColumnWidth(4),
+          1: const pw.FlexColumnWidth(2),
+          2: const pw.FlexColumnWidth(2),
+          3: const pw.FlexColumnWidth(2),
+        },
         children: [
-            // Header
-            pw.Container(
-              color: _tableRowAlt,
-              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(flex: 2, child: pw.Text('DATE', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 3, child: pw.Text('DESCRIPTION', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('CATEGORY', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('ACCOUNT', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('AMOUNT', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('BALANCE', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                ],
-              ),
-            ),
-            pw.Divider(color: _border, height: 0),
-            // Initial Balance Row
-            pw.Container(
-              color: PdfColors.white,
-              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(flex: 2, child: pw.Text('-', style: const pw.TextStyle(fontSize: 8, color: _textGrey))),
-                  pw.Expanded(flex: 3, child: pw.Text('Opening Balance', style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                  pw.Expanded(flex: 2, child: pw.Text('-', style: const pw.TextStyle(fontSize: 8, color: _textGrey))),
-                  pw.Expanded(flex: 2, child: pw.Text('-', style: const pw.TextStyle(fontSize: 8, color: _textGrey))),
-                  pw.Expanded(flex: 2, child: pw.Text('-', textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textGrey))),
-                  pw.Expanded(flex: 2, child: pw.Text(fmt.format(initialBalance), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                ],
-              ),
-            ),
-            pw.Divider(color: _border, height: 0),
-            // Transaction Rows
-            ...txns.asMap().entries.map((entry) {
-              final t = entry.value;
-              final isAlt = entry.key % 2 == 1;
-              
-              // Calculate running balance
-              double b = initialBalance;
-              for (var i = 0; i <= entry.key; i++) {
-                if (!txns[i].isTransfer) {
-                  b += txns[i].type == CategoryType.income ? txns[i].amount : -txns[i].amount;
-                }
-              }
+          pw.TableRow(
+            repeat: true,
+            decoration: const pw.BoxDecoration(color: _tableHeader),
+            children: [
+              _th('ITEM'),
+              _th('TOTAL AMOUNT', align: pw.TextAlign.right),
+              _th('PAID', align: pw.TextAlign.right),
+              _th('REMAINING', align: pw.TextAlign.right),
+            ],
+          ),
+          ...installments.asMap().entries.map((entry) {
+            final i = entry.value;
+            final paid = (i.totalAmount / i.months) * i.paidMonths;
+            final rem = i.totalAmount - paid;
+            final isAlt = entry.key % 2 == 1;
 
-              final isIncome = t.type == CategoryType.income;
-              final acc = provider.accounts.firstWhere((a) => a.id == t.accountId, orElse: () => provider.accounts.first);
-              final cat = provider.categories.firstWhere((c) => c.id == t.categoryId, orElse: () => CategoryModel(id: '', name: isIncome ? 'Income' : 'Expense', iconKey: '', colorValue: 0, type: t.type));
-              
-              return pw.Container(
-                color: isAlt ? _tableRowAlt : PdfColors.white,
-                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: pw.Row(
-                  children: [
-                    pw.Expanded(flex: 2, child: pw.Text(dateFmt.format(t.date), style: const pw.TextStyle(fontSize: 8, color: _textGrey))),
-                    pw.Expanded(flex: 3, child: pw.Text(t.title, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                    pw.Expanded(flex: 2, child: pw.Text(cat.name, style: pw.TextStyle(fontSize: 8, color: isIncome ? _green : _red))),
-                    pw.Expanded(flex: 2, child: pw.Text(acc.name, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                    pw.Expanded(flex: 2, child: pw.Text('${isIncome ? '+' : '-'} ${fmt.format(t.amount)}', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, color: isIncome ? _green : _red))),
-                    pw.Expanded(flex: 2, child: pw.Text(fmt.format(b), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-    );
-  }
-
-  static pw.Widget _loansTable(List installments, NumberFormat fmt) {
-    return _sectionContainer(
-      title: 'LOANS & INSTALLMENTS',
-      padding: pw.EdgeInsets.zero,
-      child: pw.Column(
-        children: [
-            // Header
-            pw.Container(
-              color: _tableRowAlt,
-              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(flex: 4, child: pw.Text('ITEM', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('TOTAL AMOUNT', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('PAID', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                  pw.Expanded(flex: 2, child: pw.Text('REMAINING', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _primary))),
-                ],
-              ),
-            ),
-            pw.Divider(color: _border, height: 0),
-            // Data
-            ...installments.asMap().entries.map((entry) {
-              final i = entry.value;
-              final paid = (i.totalAmount / i.months) * i.paidMonths;
-              final rem = i.totalAmount - paid;
-              final isAlt = entry.key % 2 == 1;
-
-              return pw.Container(
-                color: isAlt ? _tableRowAlt : PdfColors.white,
-                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: pw.Row(
-                  children: [
-                    pw.Expanded(flex: 4, child: pw.Text('${i.item} - ${i.shop}', style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                    pw.Expanded(flex: 2, child: pw.Text(fmt.format(i.totalAmount), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                    pw.Expanded(flex: 2, child: pw.Text(fmt.format(paid), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                    pw.Expanded(flex: 2, child: pw.Text(fmt.format(rem), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 8, color: _textDark))),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-    );
+            return pw.TableRow(
+              decoration: pw.BoxDecoration(color: isAlt ? _tableRowAlt : PdfColors.white),
+              children: [
+                _td('${i.item} - ${i.shop}'),
+                _td(fmt.format(i.totalAmount), align: pw.TextAlign.right),
+                _td(fmt.format(paid), align: pw.TextAlign.right),
+                _td(fmt.format(rem), align: pw.TextAlign.right),
+              ],
+            );
+          }),
+        ],
+      ),
+    ];
   }
 }
